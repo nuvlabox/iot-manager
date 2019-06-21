@@ -3,8 +3,11 @@ FROM python:3-alpine AS libsensors-builder
 RUN apk add --no-cache gcc=8.3.0-r0 linux-headers=4.18.13-r1 musl-dev=1.1.20-r4 make=4.2.1-r2 git=2.20.1-r0 \
         flex=2.6.4-r1 bison=3.0.5-r0
 
-RUN git clone https://github.com/lm-sensors/lm-sensors.git && \
-        cd lm-sensors && make install
+RUN git clone https://github.com/lm-sensors/lm-sensors.git /tmp/lm-sensors
+
+WORKDIR /tmp/lm-sensors
+
+RUN make install
 
 # ---
 

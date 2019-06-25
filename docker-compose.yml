@@ -1,0 +1,14 @@
+version: "3.7"
+
+services:
+  peripheral-manager-usb:
+    build: .
+    volumes:
+      - /dev:/dev:rslave
+      - /run/udev:/run/udev:ro
+#    environment:
+#      - NUVLABOX_UUID=${NUVLABOX_UUID}
+#      - NUVLA_ENDPOINT=nuvla.io
+    labels:
+      - nuvlabox.component=True
+      - nuvlabox.deployment=production

@@ -1,0 +1,22 @@
+version: "3.7"
+
+services:
+  peripheral-manager-usb:
+    build: .
+    volumes:
+      - /dev:/dev:rslave
+      - /run/udev:/run/udev:ro
+#    environment:
+#      - NUVLABOX_UUID=${NUVLABOX_UUID}
+#      - NUVLA_ENDPOINT=local-nuvla-endpoint
+#      - NUVLA_ENDPOINT_INSECURE=True
+    labels:
+      - nuvlabox.component=True
+      - nuvlabox.deployment=localhost
+#    networks:
+#      - default
+#
+#networks:
+#  default:
+#    external:
+#      name: localhost_nuvlabox

@@ -1,17 +1,4 @@
-FROM python:3-alpine AS libsensors-builder
-
-RUN apk add --no-cache gcc=8.3.0-r0 linux-headers=4.18.13-r1 musl-dev=1.1.20-r4 make=4.2.1-r2 git=2.20.1-r0 \
-        flex=2.6.4-r1 bison=3.0.5-r0
-
-RUN git clone https://github.com/lm-sensors/lm-sensors.git /tmp/lm-sensors
-
-WORKDIR /tmp/lm-sensors
-
-RUN make install
-
-# ---
-
-FROM python:3-alpine
+FROM debian:stretch-slim
 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID
@@ -27,14 +14,16 @@ LABEL git.build.time=${GIT_BUILD_TIME}
 LABEL travis.build.number=${TRAVIS_BUILD_NUMBER}
 LABEL travis.build.web.url=${TRAVIS_BUILD_WEB_URL}
 
-COPY --from=libsensors-builder /usr/local/bin/sensors /usr/local/bin/sensors
-COPY --from=libsensors-builder /usr/local/sbin/sensors-detect /usr/local/sbin/sensors-detect
-COPY --from=libsensors-builder /usr/local/lib/libsensors.so.5 /usr/local/lib/libsensors.so.5
+RUN apt update && apt-get install -y usbutils=1:007-4+b1 curl=7.52.1-5+deb9u9 udev=232-25+deb9u11 jq=1.5+dfsg-1.3
+
+RUN apt-get clean autoclean \
+        && apt-get autoremove --yes \
+        && /bin/bash -c "rm -rf /var/lib/{apt,dpkg,cache,log}/"debian:stretch-slim
 
 COPY code/ /opt/nuvlabox/
 
 WORKDIR /opt/nuvlabox/
 
-RUN apk add --no-cache perl=5.26.3-r0
+VOLUME /srv/nuvlabox/shared
 
-
+ENTRYPOINT ["./app.sh"]

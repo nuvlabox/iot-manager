@@ -2,5 +2,4 @@
 
 set -e
 
-lsusb
 udevadm monitor

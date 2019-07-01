@@ -9,9 +9,9 @@ set -o pipefail
 resource=$1
 payload=$2
 
-if [[ "${payload}" == {* ]] && [[ "${payload}" == *} ]]
+if [[ ! -z ${payload} ]] || [[ "${payload}" != *} ]]
 then
-    payload="'${payload}'"
+    (echo "${payload}" | jq -e . &>/dev/null) || { echo "ERR: the received payload is not a JSON"; exit 1; }
 fi
 
 if [[ -z ${resource} ]] || [[ -z ${payload} ]]
@@ -38,7 +38,7 @@ cookies_file="${shared_directory}/cookies"
 if [[ -f ${cookies_file} ]]
 then
     # Cookies exist, but let's first see if they are still valid
-    session_alive=$(curl -XGET --fail -s \
+    session_alive=$(curl -XGET --fail \
                         ${nuvla_endpoint}/api/session \
                         -H accept:application/json \
                         -b ${cookies_file} \
@@ -47,13 +47,13 @@ then
     if [[ "${session_alive}" == "true" ]]
     then
         # Push resource to Nuvla
-        (curl -XPOST --fail -s \
+        (curl -XPOST --fail \
             ${nuvla_endpoint}/api/${resource} \
             -H content-type:application/json \
             -H accept:application/json \
             -b ${cookies_file} -c ${cookies_file} \
             ${extra_flags} \
-            -d "'"${payload}"'" | jq -e '.status==201') || { echo "WARN: Cannot create resource ${payload} in Nuvla"; exit 1; }
+            -d "${payload}" | jq -e '.status==201') || { echo "WARN: Cannot create resource ${payload} in Nuvla"; exit 1; }
         exit 0
     fi
 fi
@@ -67,20 +67,20 @@ session_template='{
     }
 }'
 
-(curl -XPOST --fail -s \
+(curl -XPOST --fail \
     ${nuvla_endpoint}/api/session \
     -H content-type:application/json \
     -H accept:application/json \
     -c ${cookies_file} \
     ${extra_flags} \
-    -d "'"${session_template}"'" | jq -e '.status==201') || { echo "ERR: can not login to ${nuvla_endpoint}"; exit 1; }
+    -d "${session_template}" | jq -e '.status==201') || { echo "ERR: can not login to ${nuvla_endpoint}"; exit 1; }
 
 
 # Now we can push the resource
-(curl -XPOST --fail -s \
+(curl -XPOST --fail \
     ${nuvla_endpoint}/api/${resource} \
     -H content-type:application/json \
     -H accept:application/json \
     -b ${cookies_file} \
     ${extra_flags} \
-    -d "'"${payload}"'" | jq -e '.status==201') || { echo "WARN: Cannot create resource ${payload} in Nuvla"; exit 1; }
+    -d "${payload}" | jq -e '.status==201') || { echo "WARN: Cannot create resource ${payload} in Nuvla"; exit 1; }

@@ -61,7 +61,7 @@ echo "INFO: start listening for USB related events in ${nuvlabox_id}..."
 pipefail=$(date +%s)
 
 mkfifo ${pipefail}
-inotifywait -m -q -r /dev/bus/usb -e CREATE -e DELETE --csv > ${pipefail}
+inotifywait -m -q -r /dev/bus/usb -e CREATE -e DELETE --csv > ${pipefail} &
 while read event
 do
     echo ${event}

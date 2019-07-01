@@ -4,7 +4,7 @@
 # Classifies and attaches a new USB peripheral to this NuvlaBox, in Nuvla
 #
 
-set -e
+set -o pipefail
 
 resource=$1
 payload=$2
@@ -38,7 +38,7 @@ cookies_file="${shared_directory}/cookies"
 if [[ -f ${cookies_file} ]]
 then
     # Cookies exist, but let's first see if they are still valid
-    session_alive=$(curl -XGET \
+    session_alive=$(curl -XGET --fail \
                         ${nuvla_endpoint}/api/session \
                         -H accept:application/json \
                         -b ${cookies_file} \
@@ -47,8 +47,8 @@ then
     if [[ "${session_alive}" == "true" ]]
     then
         # Push resource to Nuvla
-        (curl -XPOST \
-            ${nuvla_endpoint}/api/${resource}
+        (curl -XPOST --fail \
+            ${nuvla_endpoint}/api/${resource} \
             -H content-type:application/json \
             -H accept:application/json \
             -b ${cookies_file} -c ${cookies_file} \
@@ -67,8 +67,8 @@ session_template='{
     }
 }'
 
-(curl -XPOST \
-    ${nuvla_endpoint}/api/session
+(curl -XPOST --fail \
+    ${nuvla_endpoint}/api/session \
     -H content-type:application/json \
     -H accept:application/json \
     -c ${cookies_file} \
@@ -77,8 +77,8 @@ session_template='{
 
 
 # Now we can push the resource
-(curl -XPOST \
-    ${nuvla_endpoint}/api/${resource}
+(curl -XPOST --fail \
+    ${nuvla_endpoint}/api/${resource} \
     -H content-type:application/json \
     -H accept:application/json \
     -b ${cookies_file} \

@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+
+#
+# Classifies and attaches a new USB peripheral to this NuvlaBox, in Nuvla
+#
+
+set -e
+
+buspath=$1
+devnumber=$2
+nb_id=$3
+
+if [[ -z ${buspath} ]] || [[ -z ${devnumber} ]] || [[ -z ${nb_id} ]]
+then
+    echo "ERR: this script needs the usb bus path, device number and NuvlaBox ID as inputs"
+    exit 126
+fi
+
+if [[ -z ${PERIPHERALS_DIR} ]]
+then
+    export PERIPHERALS_DIR="${SHARED}/.peripherals"
+    echo "WARN: the environment variable PERIPHERALS_DIR has not been set. Using default $PERIPHERALS_DIR."
+fi
+
+real_devnumber=$(echo ${devnumber} | sed 's/^0*//')
+
+device="${buspath}${devnumber}"
+
+if [[ ! -e "${device}" ]]
+then
+    exit 0
+fi
+
+simple_lsusb=$(lsusb -s ${devnumber})
+detailed_lsusb=$(lsusb -D ${device})
+tree_lsusb=$(lsusb -t)
+
+identifier=$(echo ${simple_lsusb} | cut -d " " -f6- | awk -F' ' '{print $1}')
+nuvlabox_peripheral_filename="${PERIPHERALS_DIR}/${identifier}"
+
+vendor=$(echo "${detailed_lsusb}" | grep idVendor | awk '{ for (i=3; i<=NF; i++) printf $i" " }')
+product=$(echo "${detailed_lsusb}" | grep idProduct | awk '{ for (i=3; i<=NF; i++) printf $i" " }')
+
+classes=$(echo "${tree_lsusb}" | grep ${real_devnumber} | awk -F'[,=]' '{print "\""$4"\","}' | sort | uniq)
+classes_final=$(echo "["${classes} | sed 's/,$/]/')
+
+interface="USB"
+### TODO: this availability check should come from the system-manager
+available=True
+###
+
+description="${interface} ${identifier} ${vendor} ${product}"
+
+if [[ ! -z ${product} ]]
+then
+    name="${product}"
+else
+    name=${description}
+fi
+
+json=$( jq -n \
+            --arg parent "${nb_id}" \
+            --arg name "${name}" \
+            --arg description "${description}" \
+            --arg available ${available} \
+            --arg interface "${interface}" \
+            --arg classes "${classes_final}" \
+            --arg identifier "${identifier}" \
+            --arg vendor "${vendor}" \
+            --arg product "${product}" \
+            --arg device "${device}" \
+            '{  parent: $parent,
+                name: $name,
+                description: $description,
+                available: $available,
+                interface: $interface,
+                classes: $classes,
+                identifier: $identifier,
+                vendor: $vendor,
+                product: $product,
+                device: $device }' )
+
+(nuvla-client-post "nuvlabox-peripheral" "${json}" && \
+    echo ${json} > ${PERIPHERALS_DIR}/${identifier} && \
+    echo "INFO: successfully registered peripheral ${identifier}" ) || echo "ERR: could not register new USB device ${identifier}!"
+
+

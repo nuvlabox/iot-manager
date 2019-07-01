@@ -29,10 +29,10 @@ RUN apt-get clean autoclean \
 # inside the Docker image and move the /dev mount into a tmpmount inside the container
 # See Balena's example: https://github.com/balena-io-library/base-images/blob/master/balena-base-images/armv7hf/debian/stretch/run/entry.sh
 
+COPY code/app.sh /opt/nuvlabox/
+COPY code/usb_actions /usr/sbin/
 
-
-
-COPY code/ /opt/nuvlabox/
+RUN chmod +x /usr/sbin/nuvla*
 
 WORKDIR /opt/nuvlabox/
 

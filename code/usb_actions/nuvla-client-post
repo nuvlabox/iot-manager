@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+
+#
+# Classifies and attaches a new USB peripheral to this NuvlaBox, in Nuvla
+#
+
+set -e
+
+resource=$1
+payload=$2
+
+if [[ "${payload}" == {* ]] && [[ "${payload}" == *} ]]
+then
+    payload="'${payload}'"
+fi
+
+if [[ -z ${resource} ]] || [[ -z ${payload} ]]
+then
+    echo "ERR: this script needs a payload and resource name as inputs"
+    exit 126
+fi
+
+nuvla_endpoint="https://"${NUVLA_ENDPOINT:-nuvla.io}
+shared_directory=${SHARED:-/srv/nuvlabox/shared}
+
+api_key=$(jq -r '."api-key"' ${shared_directory}/.activated)
+secret_key=$(jq -r '."secret-key"' ${shared_directory}/.activated)
+
+if [[ ! -z ${NUVLA_ENDPOINT_INSECURE} ]]
+then
+    extra_flags="-k"
+else
+    extra_flags=""
+fi
+
+cookies_file="${shared_directory}/cookies"
+
+if [[ -f ${cookies_file} ]]
+then
+    # Cookies exist, but let's first see if they are still valid
+    session_alive=$(curl -XGET \
+                        ${nuvla_endpoint}/api/session \
+                        -H accept:application/json \
+                        -b ${cookies_file} \
+                        ${extra_flags} | jq '.count > 0')
+
+    if [[ "${session_alive}" == "true" ]]
+    then
+        # Push resource to Nuvla
+        (curl -XPOST \
+            ${nuvla_endpoint}/api/${resource}
+            -H content-type:application/json \
+            -H accept:application/json \
+            -b ${cookies_file} -c ${cookies_file} \
+            ${extra_flags} \
+            -d ${payload} | jq -e '.status==201') || (echo "WARN: Cannot create resource ${payload} in Nuvla" && exit 1)
+        exit 0
+    fi
+fi
+
+# Then we have to login first
+session_template='{
+    "template": {
+        "href": "session-template/api-key",
+        "key": "'${api_key}'",
+        "secret": "'${secret_key}'"
+    }
+}'
+
+(curl -XPOST \
+    ${nuvla_endpoint}/api/session
+    -H content-type:application/json \
+    -H accept:application/json \
+    -c ${cookies_file} \
+    ${extra_flags} \
+    -d "'${session_template}'" | jq -e '.status==201') || (echo "ERR: can not login to ${nuvla_endpoint}" && exit 1)
+
+
+# Now we can push the resource
+(curl -XPOST \
+    ${nuvla_endpoint}/api/${resource}
+    -H content-type:application/json \
+    -H accept:application/json \
+    -b ${cookies_file} \
+    ${extra_flags} \
+    -d ${payload} | jq -e '.status==201') || (echo "WARN: Cannot create resource ${payload} in Nuvla" && exit 1)

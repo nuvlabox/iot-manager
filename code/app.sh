@@ -34,7 +34,26 @@ then
     fi
 fi
 
-echo "INFO: start listening for USB related events..."
+# Until we cannot find the .peripherals directory, we wait
+export SHARED="/srv/nuvlabox/shared"
+export PERIPHERALS_DIR="${SHARED}/.peripherals"
+export CONTEXT_FILE="${SHARED}/.context"
+
+timeout 120 bash -c -- "until [[ -d $PERIPHERALS_DIR ]]
+do
+    echo 'INFO: waiting for '$PERIPHERALS_DIR
+    sleep 3
+done"
+
+# Finds the context file in the shared volume and extracts the UUID from there
+timeout 120 bash -c -- "until [[ -f $CONTEXT_FILE ]]
+do
+    echo 'INFO: waiting for NuvlaBox activation and context file '$CONTEXT_FILE
+    sleep 3
+done"
+
+nuvlabox_id=$(jq -r .id ${CONTEXT_FILE})
+echo "INFO: start listening for USB related events in ${nuvlabox_id}..."
 
 # Using inotify instead of udev
 # To use udev, please check the Dockerfile for an implementation reference with systemd-udev
@@ -53,12 +72,12 @@ do
     if [[ "${action}" = "CREATE" ]]
     then
         echo "INFO: creating USB peripheral in Nuvla"
-        nuvlabox-add-usb-peripheral ${buspath} ${devnumber}
+        nuvlabox-add-usb-peripheral ${buspath} ${devnumber} ${nuvlabox_id}
     fi
 
     if [[ "${action}" = "DELETE" ]]
     then
         echo "INFO: deleting USB peripheral from Nuvla"
-        nuvlabox-delete-usb-peripheral ${buspath} ${devnumber}
+        nuvlabox-delete-usb-peripheral ${buspath} ${devnumber} ${nuvlabox_id}
     fi
 done < ${pipefail}

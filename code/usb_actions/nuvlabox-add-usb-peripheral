@@ -46,7 +46,7 @@ classes_final=$(echo "["${classes} | sed 's/,$/]/')
 
 interface="USB"
 ### TODO: this availability check should come from the system-manager
-available=True
+available=true
 ###
 
 description="${interface} ${identifier} ${vendor} ${product}"
@@ -64,7 +64,7 @@ json=$( jq -n \
             --arg description "${description}" \
             --arg available ${available} \
             --arg interface "${interface}" \
-            --arg classes "${classes_final}" \
+            --arg classes ${classes_final} \
             --arg identifier "${identifier}" \
             --arg vendor "${vendor}" \
             --arg product "${product}" \
@@ -72,13 +72,14 @@ json=$( jq -n \
             '{  parent: $parent,
                 name: $name,
                 description: $description,
-                available: $available,
+                available: true,
                 interface: $interface,
                 classes: $classes,
                 identifier: $identifier,
                 vendor: $vendor,
                 product: $product,
-                device: $device }' )
+                device-path: $device,
+                version: 0}' )
 
 (nuvla-client-post "nuvlabox-peripheral" "${json}" && \
     echo ${json} > ${PERIPHERALS_DIR}/${identifier} && \

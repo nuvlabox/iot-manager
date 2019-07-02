@@ -53,6 +53,8 @@ do
 done"
 
 nuvlabox_id=$(jq -r .id ${CONTEXT_FILE})
+nuvlabox_version=$(jq -r .version ${CONTEXT_FILE})
+
 echo "INFO: start listening for USB related events in ${nuvlabox_id}..."
 
 # Using inotify instead of udev
@@ -72,7 +74,7 @@ do
     if [[ "${action}" = "CREATE" ]]
     then
         echo "INFO: creating USB peripheral in Nuvla"
-        nuvlabox-add-usb-peripheral ${buspath} ${devnumber} ${nuvlabox_id}
+        nuvlabox-add-usb-peripheral ${buspath} ${devnumber} ${nuvlabox_id} ${nuvlabox_version}
     fi
 
     if [[ "${action}" = "DELETE" ]]

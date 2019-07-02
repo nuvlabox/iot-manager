@@ -9,10 +9,11 @@ set -e
 buspath=$1
 devnumber=$2
 nb_id=$3
+nb_version=$4
 
-if [[ -z ${buspath} ]] || [[ -z ${devnumber} ]] || [[ -z ${nb_id} ]]
+if [[ -z ${buspath} ]] || [[ -z ${devnumber} ]] || [[ -z ${nb_id} ]] || [[ -z ${nb_version} ]]
 then
-    echo "ERR: this script needs the usb bus path, device number and NuvlaBox ID as inputs"
+    echo "ERR: this script needs the usb bus path, device number, NuvlaBox ID and version as inputs"
     exit 126
 fi
 
@@ -41,7 +42,7 @@ nuvlabox_peripheral_filename="${PERIPHERALS_DIR}/${identifier}"
 vendor=$(echo "${detailed_lsusb}" | grep idVendor | awk '{ for (i=3; i<=NF; i++) printf $i" " }')
 product=$(echo "${detailed_lsusb}" | grep idProduct | awk '{ for (i=3; i<=NF; i++) printf $i" " }')
 
-classes=$(echo "${tree_lsusb}" | grep ${real_devnumber} | awk -F'[,=]' '{print "\""$4"\","}' | sort | uniq)
+classes=$(echo "${tree_lsusb}" | grep "Dev ${real_devnumber}" | awk -F'[,=]' '{print "\""$4"\","}' | sort | uniq)
 classes_final=$(echo "["${classes} | sed 's/,$/]/')
 
 interface="USB"
@@ -60,26 +61,28 @@ fi
 
 json=$( jq -n \
             --arg parent "${nb_id}" \
+            --argjson version ${nb_version} \
             --arg name "${name}" \
             --arg description "${description}" \
-            --arg available ${available} \
+            --argjson available ${available} \
             --arg interface "${interface}" \
-            --arg classes ${classes_final} \
+            --argjson classes "${classes_final}" \
             --arg identifier "${identifier}" \
             --arg vendor "${vendor}" \
             --arg product "${product}" \
             --arg device "${device}" \
             '{  parent: $parent,
+                version: $version,
                 name: $name,
                 description: $description,
-                available: true,
+                available: $available,
                 interface: $interface,
                 classes: $classes,
                 identifier: $identifier,
                 vendor: $vendor,
                 product: $product,
-                device-path: $device,
-                version: 0}' )
+                "device-path": $device,
+                version: $version}' )
 
 (nuvla-client-post "nuvlabox-peripheral" "${json}" && \
     echo ${json} > ${PERIPHERALS_DIR}/${identifier} && \

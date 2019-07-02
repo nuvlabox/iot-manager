@@ -1,22 +1,17 @@
 #!/usr/bin/env bash
 
 #
-# Generic client to post a payload to Nuvla
+# Generic client to delete a resource from Nuvla
 #
 
 set -o pipefail
+set -x
 
-resource=$1
-payload=$2
+resource_id=$1
 
-if [[ ! -z ${payload} ]] || [[ "${payload}" != *} ]]
+if [[ -z ${resource_id} ]]
 then
-    (echo "${payload}" | jq -e . &>/dev/null) || { echo "ERR: the received payload is not a JSON"; exit 1; }
-fi
-
-if [[ -z ${resource} ]] || [[ -z ${payload} ]]
-then
-    echo "ERR: this script needs a payload and resource name as inputs"
+    echo "ERR: this script needs a resource ID as an input"
     exit 126
 fi
 
@@ -47,13 +42,11 @@ then
     if [[ "${session_alive}" == "true" ]]
     then
         # Push resource to Nuvla
-        (curl -XPOST --fail \
-            ${nuvla_endpoint}/api/${resource} \
-            -H content-type:application/json \
+        (curl -XDELETE --fail \
+            ${nuvla_endpoint}/api/${resource_id} \
             -H accept:application/json \
             -b ${cookies_file} -c ${cookies_file} \
-            ${extra_flags} \
-            -d "${payload}" | jq -re '."resource-id"') || { echo "WARN: Cannot create resource ${payload} in Nuvla"; exit 1; }
+            ${extra_flags} | jq -e '.status==200' &>/dev/null) || { echo "WARN: Cannot delete resource ${resource_id} in Nuvla"; exit 1; }
         exit 0
     fi
 fi
@@ -77,10 +70,8 @@ session_template='{
 
 
 # Now we can push the resource
-(curl -XPOST --fail \
-    ${nuvla_endpoint}/api/${resource} \
-    -H content-type:application/json \
+(curl -XDELETE --fail \
+    ${nuvla_endpoint}/api/${resource_id} \
     -H accept:application/json \
     -b ${cookies_file} \
-    ${extra_flags} \
-    -d "${payload}" | jq -re '."resource-id"') || { echo "WARN: Cannot create resource ${payload} in Nuvla"; exit 1; }
+    ${extra_flags} | jq -e '.status==200' &>/dev/null) || { echo "WARN: Cannot delete resource ${resource_id} in Nuvla"; exit 1; }

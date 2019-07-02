@@ -22,16 +22,16 @@ fi
 
 for peripheral in `ls ${PERIPHERALS_DIR}`
 do
-    devicepath=$(jq -r '."device-path"' ${PERIPHERALS_DIR}${peripheral})
+    devicepath=$(jq -r '."device-path"' "${PERIPHERALS_DIR}/${peripheral}")
     if [[ "${devicepath}" == "${device}" ]]
     then
-        nuvla_id=$(jq -r '."id"' ${PERIPHERALS_DIR}${peripheral})
+        nuvla_id=$(jq -r '."id"' "${PERIPHERALS_DIR}/${peripheral}")
         (nuvla-client-delete "${nuvla_id}" || \
             (echo "WARN: could not delete ${nuvla_id} from Nuvla. Trying a second time..." && \
                 sleep 5 && nuvla-client-delete "${nuvla_id}") || \
             echo "ERR: failed to delete ${nuvla_id} from Nuvla!") && \
-        (rm -f ${PERIPHERALS_DIR}${peripheral} || echo "ERR: could not delete ${PERIPHERALS_DIR}${peripheral}") && \
-        echo "INFO: Successfully deleted ${nuvla_id} and ${PERIPHERALS_DIR}${peripheral}"
+        (rm -f "${PERIPHERALS_DIR}/${peripheral}" || echo "ERR: could not delete ${PERIPHERALS_DIR}/${peripheral}") && \
+        echo "INFO: Successfully deleted ${nuvla_id} and ${PERIPHERALS_DIR}/${peripheral}"
         break
     fi
 done

@@ -52,37 +52,53 @@ available=true
 
 description="${interface} ${identifier} ${vendor} ${product}"
 
-if [[ ! -z ${product} ]]
-then
-    name="${product}"
-else
-    name=${description}
-fi
+
+
+add_string_json() {
+    # $1 is original json
+    # $2 is attribute name
+    # $3 is value
+    echo $1 | jq --arg newarg "${3}" '. + {($2): $newarg}'
+}
 
 json=$( jq -n \
             --arg parent "${nb_id}" \
             --argjson version ${nb_version} \
-            --arg name "${name}" \
-            --arg description "${description}" \
             --argjson available ${available} \
             --arg interface "${interface}" \
             --argjson classes "${classes_final}" \
             --arg identifier "${identifier}" \
-            --arg vendor "${vendor}" \
-            --arg product "${product}" \
-            --arg device "${device}" \
             '{  parent: $parent,
                 version: $version,
-                name: $name,
-                description: $description,
                 available: $available,
                 interface: $interface,
                 classes: $classes,
-                identifier: $identifier,
-                vendor: $vendor,
-                product: $product,
-                "device-path": $device,
-                version: $version}' )
+                identifier: $identifier}' )
+
+
+if [[ ! -z ${product} ]]
+then
+    name="${product}"
+    json=$(add_string_json "${json}" "product" "${product}")
+else
+    if [[ ! -z ${description} ]]
+    then
+        name=${description}
+        json=$(add_string_json "${json}" "description" "${description}")
+        json=$(add_string_json "${json}" "name" "${name}")
+    fi
+fi
+
+if [[ ! -z ${vendor} ]]
+then
+    json=$(add_string_json "${json}" "vendor" "${vendor}")
+fi
+
+if [[ ! -z ${device} ]]
+then
+    json=$(add_string_json "${json}" "device" "${device}")
+fi
+
 
 (id=$(nuvla-client-post "nuvlabox-peripheral" "${json}") && \
     nuvla_id=$(echo "${id}" | awk -F' ' '{print $NF}') && \

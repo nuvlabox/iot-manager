@@ -5,7 +5,7 @@
 #
 
 set -o pipefail
-set -x
+set -e
 
 resource_id=$1
 

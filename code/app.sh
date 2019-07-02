@@ -24,6 +24,25 @@ help_info() {
     exit 0
 }
 
+check_existing_peripherals() {
+    # $1 is the NuvlaBox ID
+    # $2 is the NuvlaBox version
+    lsusb | while read discovered_peripheral
+    do
+        id=$(echo "${discovered_peripheral}" | awk -F' ' '{print $6}')
+        if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]]
+        then
+            busnum=$(echo "${discovered_peripheral}" | awk -F' ' '{print $2}')
+            devnum=$(echo "${discovered_peripheral}" | awk -F'[ :]' '{print $4}')
+            bus="/dev/bus/usb/${busnum}/"
+
+            echo "INFO: found new USB peripheral ${id} during startup. Adding it to Nuvla"
+            nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2}
+        fi
+    done
+}
+
+
 if [[ ! -z ${SOME_ARG} ]]
 then
     if [[ "${SOME_ARG}" = "-h" ]] || [[ "${SOME_ARG}" = "--help" ]] || [[ "${SOME_ARG}" = "help" ]]
@@ -55,6 +74,8 @@ done"
 nuvlabox_id=$(jq -r .id ${CONTEXT_FILE})
 nuvlabox_version=$(jq -r .version ${CONTEXT_FILE})
 
+echo "INFO: checking for existing peripherals..."
+check_existing_peripherals ${nuvlabox_id} ${nuvlabox_version}
 echo "INFO: start listening for USB related events in ${nuvlabox_id}..."
 
 # Using inotify instead of udev

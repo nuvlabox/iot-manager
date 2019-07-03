@@ -13,3 +13,4 @@ services:
     labels:
       - nuvlabox.component=True
       - nuvlabox.deployment=onpremise
+    network_mode: host

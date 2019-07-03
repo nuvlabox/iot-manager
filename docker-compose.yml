@@ -3,6 +3,7 @@ version: "3.7"
 services:
   peripheral-manager-usb:
     build: .
+    restart: on-failure
     volumes:
       - /dev:/dev:ro
       - /run/udev/control:/run/udev/control:ro
@@ -12,5 +13,5 @@ services:
     labels:
       - nuvlabox.component=True
       - nuvlabox.deployment=production
-    networks:
-      - host
+    network_mode: host
+

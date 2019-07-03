@@ -8,16 +8,10 @@ services:
       - /run/udev/control:/run/udev/control:ro
     environment:
       - NUVLABOX_UUID=${NUVLABOX_UUID}
-      - NUVLA_ENDPOINT=local-nuvla-endpoint
+      - NUVLA_ENDPOINT=localhost
       - NUVLA_ENDPOINT_INSECURE=True
     labels:
       - nuvlabox.component=True
       - nuvlabox.deployment=localhost
-    networks:
-      - host
-      - default
+    network_mode: host
 
-networks:
-  default:
-    external:
-      name: localhost_nuvlabox

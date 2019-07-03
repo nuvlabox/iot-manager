@@ -96,9 +96,10 @@ fi
 
 if [[ ! -z ${device} ]]
 then
-    json=$(add_string_json "${json}" "device" "${device}")
+    json=$(add_string_json "${json}" "device-path" "${device}")
 fi
 
+echo "INFO: posting new peripheral to Nuvla: ${json}"
 
 (id=$(nuvla-client-post "nuvlabox-peripheral" "${json}") && \
     nuvla_id=$(echo "${id}" | awk -F' ' '{print $NF}') && \

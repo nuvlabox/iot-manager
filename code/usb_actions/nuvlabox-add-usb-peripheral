@@ -32,7 +32,7 @@ then
     exit 0
 fi
 
-busnum=$(udevadm info /dev/bus/usb/002/003 -q property | grep BUSNUM | awk -F'=' '{print $2}')
+busnum=$(udevadm info "${device}" -q property | grep BUSNUM | awk -F'=' '{print $2}')
 
 simple_lsusb=$(lsusb -s ${devnumber} | grep "Bus ${busnum} ")
 detailed_lsusb=$(lsusb -D ${device})

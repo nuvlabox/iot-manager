@@ -58,7 +58,7 @@ add_string_json() {
     # $1 is original json
     # $2 is attribute name
     # $3 is value
-    echo $1 | jq --arg newarg "${3}" '. + {($2): $newarg}'
+    echo $1 | jq --arg newarg "${3}" --arg key "${2}" '. + {($key): $newarg}'
 }
 
 json=$( jq -n \

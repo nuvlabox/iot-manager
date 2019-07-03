@@ -32,7 +32,9 @@ then
     exit 0
 fi
 
-simple_lsusb=$(lsusb -s ${devnumber})
+busnum=$(udevadm info /dev/bus/usb/002/003 -q property | grep BUSNUM | awk -F'=' '{print $2}')
+
+simple_lsusb=$(lsusb -s ${devnumber} | grep "Bus ${busnum} ")
 detailed_lsusb=$(lsusb -D ${device})
 tree_lsusb=$(lsusb -t)
 
@@ -42,7 +44,33 @@ nuvlabox_peripheral_filename="${PERIPHERALS_DIR}/${identifier}"
 vendor=$(echo "${detailed_lsusb}" | grep idVendor | awk '{ for (i=3; i<=NF; i++) printf $i" " }')
 product=$(echo "${detailed_lsusb}" | grep idProduct | awk '{ for (i=3; i<=NF; i++) printf $i" " }')
 
-classes=$(echo "${tree_lsusb}" | grep "Dev ${real_devnumber}" | awk -F'[,=]' '{print "\""$4"\","}' | sort | uniq)
+classes=""
+lsusb_device=$(echo "${tree_lsusb}" | grep "Dev ${real_devnumber},")
+while read lsusb_line
+do
+    if [[ ! -z ${lsusb_line} ]]
+    then
+        if [[ "${lsusb_line}" == "/:"* ]]
+        then
+            # this is a root device
+            newclass=$(echo "${lsusb_line}" | awk -F'[,=]' '{print "\""$3"\","}')
+        else
+            newclass=$(echo "${lsusb_line}" | awk -F'[,=]' '{print "\""$4"\","}')
+        fi
+
+        if [[ "${classes}" != *"${newclass}"* ]]
+        then
+            # if the new class isn't listed yet
+            classes="${classes}${newclass}"
+        fi
+    fi
+done <<< "${lsusb_device}"
+
+if [[ -z ${classes} ]]
+then
+    classes='"UNKNOWN",'
+fi
+
 classes_final=$(echo "["${classes} | sed 's/,$/]/')
 
 interface="USB"
@@ -51,8 +79,6 @@ available=true
 ###
 
 description="${interface} ${identifier} ${vendor} ${product}"
-
-
 
 add_string_json() {
     # $1 is original json
@@ -74,7 +100,6 @@ json=$( jq -n \
                 interface: $interface,
                 classes: $classes,
                 identifier: $identifier}' )
-
 
 if [[ ! -z ${product} ]]
 then

@@ -40,6 +40,19 @@ check_existing_peripherals() {
             nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2}
         fi
     done
+
+    saved_peripherals=$(ls "${PERIPHERALS_DIR}" | sort)
+    existing_peripherals=$(lsusb | awk '{print $6}' | sort)
+
+    for saved in ${saved_peripherals}
+    do
+        if [[ "${existing_peripherals}" != *"${saved}"* ]]
+        then
+            devicepath=$(jq -r '."device-path"' "${PERIPHERALS_DIR}/${saved}")
+            echo "INFO: deleting old leftover USB peripheral from Nuvla"
+            nuvlabox-delete-usb-peripheral "${devicepath}"
+        fi
+    done
 }
 
 

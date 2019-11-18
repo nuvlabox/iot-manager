@@ -15,9 +15,9 @@ LABEL travis.build.number=${TRAVIS_BUILD_NUMBER}
 LABEL travis.build.web.url=${TRAVIS_BUILD_WEB_URL}
 
 RUN apt update && apt-get install -y --no-install-recommends \
-                    usbutils=1:007-4+b1 \
+                    usbutils=1:007-4+deb9u1 \
                     curl=7.52.1-5+deb9u9 \
-                    udev=232-25+deb9u11 \
+                    udev=232-25+deb9u12 \
                     jq=1.5+dfsg-1.3 \
                     inotify-tools=3.14-2
 

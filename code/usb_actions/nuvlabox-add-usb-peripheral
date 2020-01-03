@@ -128,5 +128,5 @@ echo "INFO: posting new peripheral to Nuvla: ${json}"
 
 (id=$(nuvla-client-post "nuvlabox-peripheral" "${json}") && \
     nuvla_id=$(echo "${id}" | awk -F' ' '{print $NF}') && \
-    echo ${json} | jq --arg id "${nuvla_id}" '. + {id: $id}' > ${PERIPHERALS_DIR}/${identifier} && \
+    echo ${json} | jq --arg id "${nuvla_id}" '. + {id: $id}' > ${nuvlabox_peripheral_filename} && \
     echo "INFO: successfully registered peripheral ${identifier}" ) || echo "ERR: could not register new USB device ${identifier}!"

@@ -148,7 +148,7 @@ fi
 
 if [[ ! -z ${device_serial} ]]
 then
-    json=$(add_string_json "${json}" "serial" "${device_serial}")
+    json=$(add_string_json "${json}" "serial-number" "${device_serial}")
 fi
 
 echo "INFO: posting new peripheral to Nuvla: ${json}"

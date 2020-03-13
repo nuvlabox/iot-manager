@@ -44,6 +44,8 @@ nuvlabox_peripheral_filename="${PERIPHERALS_DIR}/${identifier}"
 vendor=$(echo "${detailed_lsusb}" | grep idVendor | awk '{ for (i=3; i<=NF; i++) printf $i" " }')
 product=$(echo "${detailed_lsusb}" | grep idProduct | awk '{ for (i=3; i<=NF; i++) printf $i" " }')
 
+device_serial=$(udevadm info --attribute-walk $device | grep serial | grep -v ".usb" | awk -F'"' '{print $2}')
+
 classes=""
 lsusb_device=$(echo "${tree_lsusb}" | grep "Dev ${real_devnumber},")
 while read lsusb_line
@@ -62,6 +64,21 @@ do
         then
             # if the new class isn't listed yet
             classes="${classes}${newclass}"
+        fi
+
+        if [[ "$(echo ${newclass} | tr [:upper:] [:lower:])" == *"video"* ]]
+        then
+            # try to find the video device /dev/video*
+            video_files=$(ls /dev/video* -1 | sort)
+            for vf in $video_files
+            do
+                v_serial=$(udevadm info --attribute-walk -n $vf | grep serial | grep -v ".usb" | awk -F'"' '{print $2}')
+                if [[ "${v_serial}" == "${device_serial}" ]]
+                then
+                    video_device=$vf
+                    break
+                fi
+            done
         fi
     fi
 done <<< "${lsusb_device}"
@@ -122,6 +139,16 @@ fi
 if [[ ! -z ${device} ]]
 then
     json=$(add_string_json "${json}" "device-path" "${device}")
+fi
+
+if [[ ! -z ${video_device} ]]
+then
+    json=$(add_string_json "${json}" "video-device" "${video_device}")
+fi
+
+if [[ ! -z ${device_serial} ]]
+then
+    json=$(add_string_json "${json}" "serial-number" "${device_serial}")
 fi
 
 echo "INFO: posting new peripheral to Nuvla: ${json}"

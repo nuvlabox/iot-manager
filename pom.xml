@@ -6,7 +6,7 @@
     <groupId>sixsq.nuvlabox.peripheral-manager-usb</groupId>
     <artifactId>peripheral-manager-usb</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.3</version>
     <name>peripheral-manager-usb</name>
     <url>http://sixsq.com/</url>
 

@@ -1,4 +1,9 @@
 # Changelog
+## [1.0.3] - 2020-03-13
+### Added 
+- new peripheral attributes 
+- mapping from video peripheral to video device in the filesystem
+### Changed
 ## [1.0.2] - 2020-01-03
 ### Added
 ### Changed

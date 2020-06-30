@@ -46,11 +46,17 @@ check_existing_peripherals() {
 
     for saved in ${saved_peripherals}
     do
-        if [[ "${existing_peripherals}" != *"${saved}"* ]]
+        if [[ "${existing_peripherals}" != *"${saved}"* ]] || [[ "${saved}" == *".DELETE" ]]
         then
-            devicepath=$(jq -r '."device-path"' "${PERIPHERALS_DIR}/${saved}")
-            echo "INFO: deleting old leftover USB peripheral from Nuvla"
-            nuvlabox-delete-usb-peripheral "${devicepath}"
+            peripheral_nuvla_id=$(jq -r 'select(.id != null) | .id' "${PERIPHERALS_DIR}/${saved}")
+            if [[ -z ${peripheral_nuvla_id} ]]
+            then
+              echo "WARN: found an old leftover USB peripheral without a Nuvla ID...removing it locally only!"
+              rm -f "${PERIPHERALS_DIR}/${saved}"
+            else
+              echo "INFO: deleting old leftover USB peripheral from Nuvla"
+              nuvlabox-delete-usb-peripheral --nuvla-id=${peripheral_nuvla_id} --peripheral-file="${saved}"
+            fi
         fi
     done
 }

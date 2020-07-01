@@ -27,36 +27,38 @@ help_info() {
 check_existing_peripherals() {
     # $1 is the NuvlaBox ID
     # $2 is the NuvlaBox version
+
+    old_peripherals=$(ls "${PERIPHERALS_DIR}" | sort)
+
+    for old in ${old_peripherals}
+    do
+        interface=$(jq -r 'select(.interface != null) | .interface' "${PERIPHERALS_DIR}/${old}")
+        if [[ "${interface}" == "USB" ]]
+        then
+            peripheral_nuvla_id=$(jq -r 'select(.id != null) | .id' "${PERIPHERALS_DIR}/${old}")
+            if [[ -z ${peripheral_nuvla_id} ]]
+            then
+                echo "WARN: found an old USB peripheral without a Nuvla ID...removing it locally only!"
+                rm -f "${PERIPHERALS_DIR}/${old}"
+            else
+                echo "INFO: deleting old USB peripheral from Nuvla"
+                nuvlabox-delete-usb-peripheral --nuvla-id=${peripheral_nuvla_id} --peripheral-file="${old}"
+            fi
+         fi
+    done
+
+    # re-register existing peripherals
     lsusb | while read discovered_peripheral
     do
         id=$(echo "${discovered_peripheral}" | awk -F' ' '{print $6}')
+        busnum=$(echo "${discovered_peripheral}" | awk -F' ' '{print $2}')
+        devnum=$(echo "${discovered_peripheral}" | awk -F'[ :]' '{print $4}')
+        bus="/dev/bus/usb/${busnum}/"
+
         if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]]
         then
-            busnum=$(echo "${discovered_peripheral}" | awk -F' ' '{print $2}')
-            devnum=$(echo "${discovered_peripheral}" | awk -F'[ :]' '{print $4}')
-            bus="/dev/bus/usb/${busnum}/"
-
             echo "INFO: found new USB peripheral ${id} during startup. Adding it to Nuvla"
             nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2}
-        fi
-    done
-
-    saved_peripherals=$(ls "${PERIPHERALS_DIR}" | sort)
-    existing_peripherals=$(lsusb | awk '{print $6}' | sort)
-
-    for saved in ${saved_peripherals}
-    do
-        if [[ "${existing_peripherals}" != *"${saved}"* ]] || [[ "${saved}" == *".DELETE" ]]
-        then
-            peripheral_nuvla_id=$(jq -r 'select(.id != null) | .id' "${PERIPHERALS_DIR}/${saved}")
-            if [[ -z ${peripheral_nuvla_id} ]]
-            then
-              echo "WARN: found an old leftover USB peripheral without a Nuvla ID...removing it locally only!"
-              rm -f "${PERIPHERALS_DIR}/${saved}"
-            else
-              echo "INFO: deleting old leftover USB peripheral from Nuvla"
-              nuvlabox-delete-usb-peripheral --nuvla-id=${peripheral_nuvla_id} --peripheral-file="${saved}"
-            fi
         fi
     done
 }

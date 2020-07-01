@@ -53,8 +53,11 @@ try_delete() {
         nuvla-client-delete "${nuvla_peripheral_id}"
         if [[ $? -gt 0 ]]
         then
-          echo "${error_message}"
-          mv "${PERIPHERALS_DIR}/${peripheral_file}" "${PERIPHERALS_DIR}/${peripheral_file}.DELETE"
+            echo "${error_message}"
+            if [[ "${peripheral_file}" != *".DELETE" ]]
+            then
+                mv "${PERIPHERALS_DIR}/${peripheral_file}" "${PERIPHERALS_DIR}/${peripheral_file}.DELETE"
+            fi
         fi
     else
         echo "${success_message}"

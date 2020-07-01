@@ -48,6 +48,7 @@ check_existing_peripherals() {
     done
 
     # re-register existing peripherals
+    new_peripherals=''
     lsusb | while read discovered_peripheral
     do
         id=$(echo "${discovered_peripheral}" | awk -F' ' '{print $6}')
@@ -55,9 +56,10 @@ check_existing_peripherals() {
         devnum=$(echo "${discovered_peripheral}" | awk -F'[ :]' '{print $4}')
         bus="/dev/bus/usb/${busnum}/"
 
-        if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]]
+        if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]] && [[ "${new_peripherals}" != *"${id}"* ]]
         then
             echo "INFO: registering USB peripheral ${id} during startup. Adding it to Nuvla"
+            new_peripherals+=" ${id}"
             nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
         fi
     done

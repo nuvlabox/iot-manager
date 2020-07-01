@@ -120,6 +120,6 @@ do
     if [[ "${action}" = "DELETE" ]]
     then
         echo "INFO: deleting USB peripheral from Nuvla"
-        nuvlabox-delete-usb-peripheral "${buspath}${devnumber}"
+        nuvlabox-delete-usb-peripheral --device-path="${buspath}${devnumber}"
     fi
 done < ${pipefail}

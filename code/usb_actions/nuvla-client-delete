@@ -41,6 +41,26 @@ fi
 
 cookies_file="${shared_directory}/cookies"
 
+login() {
+
+    # Then we have to login first
+    session_template='{
+        "template": {
+            "href": "session-template/api-key",
+            "key": "'${api_key}'",
+            "secret": "'${secret_key}'"
+        }
+    }'
+
+    (curl -XPOST --fail \
+        ${nuvla_endpoint}/api/session \
+        -H content-type:application/json \
+        -H accept:application/json \
+        -c ${cookies_file} \
+        ${extra_flags} \
+        -d "${session_template}" | jq -e '.status==201' &>/dev/null) || { echo "ERR: can not login to ${nuvla_endpoint}"; exit 1; }
+}
+
 if [[ -f ${cookies_file} ]]
 then
     # Cookies exist, but let's first see if they are still valid
@@ -50,39 +70,30 @@ then
                         -b ${cookies_file} \
                         ${extra_flags} | jq '.count > 0')
 
-    if [[ "${session_alive}" == "true" ]]
+    if [[ "${session_alive}" != "true" ]]
     then
-        # Push resource to Nuvla
-        (curl -XDELETE --fail \
-            ${nuvla_endpoint}/api/${resource_id} \
-            -H accept:application/json \
-            -b ${cookies_file} -c ${cookies_file} \
-            ${extra_flags} | jq -e '.status==200' &>/dev/null) || { echo "WARN: Cannot delete resource ${resource_id} in Nuvla"; exit 1; }
-        exit 0
+        login
     fi
+else
+    login
 fi
 
-# Then we have to login first
-session_template='{
-    "template": {
-        "href": "session-template/api-key",
-        "key": "'${api_key}'",
-        "secret": "'${secret_key}'"
-    }
-}'
-
-(curl -XPOST --fail \
-    ${nuvla_endpoint}/api/session \
-    -H content-type:application/json \
-    -H accept:application/json \
-    -c ${cookies_file} \
-    ${extra_flags} \
-    -d "${session_template}" | jq -e '.status==201' &>/dev/null) || { echo "ERR: can not login to ${nuvla_endpoint}"; exit 1; }
+# Now we can delete the resource
+status=$(curl -XDELETE \
+          ${nuvla_endpoint}/api/${resource_id} \
+          -H accept:application/json \
+          -b ${cookies_file} \
+          ${extra_flags} | jq -r '.status')
 
 
-# Now we can push the resource
-(curl -XDELETE --fail \
-    ${nuvla_endpoint}/api/${resource_id} \
-    -H accept:application/json \
-    -b ${cookies_file} \
-    ${extra_flags} | jq -e '.status==200' &>/dev/null) || { echo "WARN: Cannot delete resource ${resource_id} in Nuvla"; exit 1; }
+if [[ $status -eq 200 ]]
+then
+    exit 0
+elif [[ $status -eq 404 ]]
+then
+    echo "INFO: ${resource_id} not found in Nuvla (404). Assuming it has already been deleted...moving on"
+    exit 0
+else
+    echo "WARN: Cannot delete resource ${resource_id} in Nuvla"
+    exit 1
+fi

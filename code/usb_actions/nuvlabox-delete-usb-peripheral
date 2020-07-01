@@ -6,13 +6,26 @@
 
 set -e
 
-device=$1
+while [[ "$1" != "" ]]; do
+    PARAM=`echo $1 | awk -F= '{print $1}'`
+    VALUE=`echo $1 | cut -d "=" -f 2-`
+    case $PARAM in
+        --device-path)
+            device=$VALUE
+            ;;
+        --nuvla-id)
+            nuvla_id=$VALUE
+            ;;
+        --peripheral-file)
+            peripheral_file=$VALUE
+            ;;
+        *)
+            echo "ERROR: unknown parameter \"$PARAM\""
+            ;;
+    esac
+    shift
+done
 
-if [[ -z ${device} ]]
-then
-    echo "ERR: this script needs the device file path as an input"
-    exit 126
-fi
 
 if [[ -z ${PERIPHERALS_DIR} ]]
 then
@@ -20,20 +33,66 @@ then
     echo "WARN: the environment variable PERIPHERALS_DIR has not been set. Using default $PERIPHERALS_DIR."
 fi
 
-for peripheral in `ls ${PERIPHERALS_DIR}`
-do
-    devicepath=$(jq -r '."device-path"' "${PERIPHERALS_DIR}/${peripheral}")
-    if [[ "${devicepath}" == "${device}" ]]
+try_delete() {
+    peripheral_file="${1}"
+    nuvla_peripheral_id="${2}"
+
+    success_message="INFO: Successfully deleted ${nuvla_peripheral_id}"
+    local_success_message="INFO: Successfully deleted local file ${PERIPHERALS_DIR}/${peripheral_file}"
+    warning_message="WARN: could not delete ${nuvla_peripheral_id} from Nuvla. Trying a second time..."
+    error_message="ERR: failed to delete ${nuvla_peripheral_id} from Nuvla! Marking it locally for later removal"
+    local_error_message="ERR: could not delete ${PERIPHERALS_DIR}/${peripheral_file}... moving on"
+
+    set +e
+    nuvla-client-delete "${nuvla_peripheral_id}"
+
+    if [[ $? -gt 0 ]]
     then
-        nuvla_id=$(jq -r '."id"' "${PERIPHERALS_DIR}/${peripheral}")
-        (nuvla-client-delete "${nuvla_id}" || \
-            (echo "WARN: could not delete ${nuvla_id} from Nuvla. Trying a second time..." && \
-                sleep 5 && nuvla-client-delete "${nuvla_id}") || \
-            echo "ERR: failed to delete ${nuvla_id} from Nuvla!") && \
-        (rm -f "${PERIPHERALS_DIR}/${peripheral}" || echo "ERR: could not delete ${PERIPHERALS_DIR}/${peripheral}") && \
-        echo "INFO: Successfully deleted ${nuvla_id} and ${PERIPHERALS_DIR}/${peripheral}"
-        break
+        echo "${warning_message}"
+        sleep 5
+        nuvla-client-delete "${nuvla_peripheral_id}"
+        if [[ $? -gt 0 ]]
+        then
+            echo "${error_message}"
+            if [[ "${peripheral_file}" != *".DELETE" ]]
+            then
+                mv "${PERIPHERALS_DIR}/${peripheral_file}" "${PERIPHERALS_DIR}/${peripheral_file}.DELETE"
+            fi
+        fi
+    else
+        echo "${success_message}"
+        (rm -f "${PERIPHERALS_DIR}/${peripheral_file}" && echo "${local_success_message}") || echo "${local_error_message}"
     fi
-done
+
+    set -e
+}
+
+if [[ ! -z ${device} ]]
+then
+    for peripheral in `ls ${PERIPHERALS_DIR}`
+    do
+        devicepath=$(jq -r '."device-path"' "${PERIPHERALS_DIR}/${peripheral}")
+        if [[ "${devicepath}" == "${device}" ]]
+        then
+            nuvla_id=$(jq -r '."id"' "${PERIPHERALS_DIR}/${peripheral}")
+            try_delete "${peripheral}" ${nuvla_id}
+            break
+        fi
+    done
+
+    exit 0
+elif [[ ! -z ${nuvla_id} ]] && [[ ! -z ${peripheral_file} ]]
+then
+    try_delete "${peripheral_file}" ${nuvla_id}
+
+    exit 0
+else
+    echo "ERR: script needs either the --device-path or the peripheral --nuvla-id and file --peripheral-file"
+    exit 126
+fi
+
+
+
+
 
 

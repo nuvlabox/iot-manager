@@ -1,4 +1,10 @@
 # Changelog
+## [1.0.4] - 2020-07-01
+### Added
+### Changed
+- better management of USB peripheral on reboot or restart
+- speed up API calls to Nuvla
+- better handling of failed deletion of Nuvla resources
 ## [1.0.3] - 2020-03-13
 ### Added 
 - new peripheral attributes 

@@ -42,7 +42,7 @@ check_existing_peripherals() {
                 rm -f "${PERIPHERALS_DIR}/${old}"
             else
                 echo "INFO: deleting old USB peripheral from Nuvla"
-                nuvlabox-delete-usb-peripheral --nuvla-id=${peripheral_nuvla_id} --peripheral-file="${old}" &
+                nuvlabox-delete-usb-peripheral --nuvla-id=${peripheral_nuvla_id} --peripheral-file="${old}"
             fi
          fi
     done
@@ -57,7 +57,7 @@ check_existing_peripherals() {
 
         if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]]
         then
-            echo "INFO: found new USB peripheral ${id} during startup. Adding it to Nuvla"
+            echo "INFO: registering USB peripheral ${id} during startup. Adding it to Nuvla"
             nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
         fi
     done

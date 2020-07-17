@@ -33,9 +33,7 @@ do
 done
 
 shared_directory=${SHARED:-/srv/nuvlabox/shared}
-
-api_key=$(jq -r '."api-key"' ${shared_directory}/.activated)
-secret_key=$(jq -r '."secret-key"' ${shared_directory}/.activated)
+cookies_file="${shared_directory}/cookies"
 
 if [[ ! -z ${NUVLA_ENDPOINT_INSECURE} ]]
 then
@@ -44,44 +42,7 @@ else
     extra_flags=""
 fi
 
-cookies_file="${shared_directory}/cookies"
-
-login() {
-
-    # Then we have to login first
-    session_template='{
-        "template": {
-            "href": "session-template/api-key",
-            "key": "'${api_key}'",
-            "secret": "'${secret_key}'"
-        }
-    }'
-
-    (curl -XPOST --fail \
-        ${nuvla_endpoint}/api/session \
-        -H content-type:application/json \
-        -H accept:application/json \
-        -c ${cookies_file} \
-        ${extra_flags} \
-        -d "${session_template}" | jq -e '.status==201' &>/dev/null) || { echo "ERR: can not login to ${nuvla_endpoint}"; exit 1; }
-}
-
-if [[ -f ${cookies_file} ]]
-then
-    # Cookies exist, but let's first see if they are still valid
-    session_alive=$(curl -XGET --fail \
-                        ${nuvla_endpoint}/api/session \
-                        -H accept:application/json \
-                        -b ${cookies_file} \
-                        ${extra_flags} | jq '.count > 0')
-
-    if [[ "${session_alive}" != "true" ]]
-    then
-        login
-    fi
-else
-    login
-fi
+nuvla-client-login "${nuvla_endpoint}" "${shared_directory}" "${cookies_file}" "${extra_flags}"
 
 # Now we can push the resource
 (curl -XPOST --fail \

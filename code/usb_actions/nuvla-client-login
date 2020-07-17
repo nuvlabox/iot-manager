@@ -11,16 +11,6 @@ shared_directory=$2
 cookies_file=$3
 extra_flags=$4
 
-if [[ "${nuvla_endpoint}" != "https://"* ]] && [[ "${nuvla_endpoint}" != "http://"* ]]
-then
-  nuvla_endpoint="https://${nuvla_endpoint}"
-fi
-
-while [[ "${nuvla_endpoint: -1}" == "/" ]]
-do
-  nuvla_endpoint=$(echo "${nuvla_endpoint:: -1}")
-done
-
 api_key=$(jq -r '."api-key"' ${shared_directory}/.activated)
 secret_key=$(jq -r '."secret-key"' ${shared_directory}/.activated)
 

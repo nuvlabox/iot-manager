@@ -28,7 +28,31 @@ check_existing_peripherals() {
     # $1 is the NuvlaBox ID
     # $2 is the NuvlaBox version
 
+    # update existing peripherals if needed
     old_peripherals=$(ls "${PERIPHERALS_DIR}" | sort)
+    new_peripherals=''
+    lsusb | while read discovered_peripheral
+    do
+        id=$(echo "${discovered_peripheral}" | awk -F' ' '{print $6}')
+        busnum=$(echo "${discovered_peripheral}" | awk -F' ' '{print $2}')
+        devnum=$(echo "${discovered_peripheral}" | awk -F'[ :]' '{print $4}')
+        bus="/dev/bus/usb/${busnum}/"
+
+        if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]] && [[ "${new_peripherals}" != *"${id}"* ]]
+        then
+            echo "INFO: registering new USB peripheral ${id} during startup. Adding it to Nuvla"
+            new_peripherals+=" ${id}"
+            nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
+        else
+            interface=$(jq -r 'select(.interface != null) | .interface' "${PERIPHERALS_DIR}/${id}")
+            if [[ "${interface}" == "USB" ]]
+            then
+                echo "INFO: comparing USB peripheral info with existing registry - ${id}"
+                nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} "update" &
+            fi
+        fi
+    done
+
 
     for old in ${old_peripherals}
     do
@@ -47,22 +71,7 @@ check_existing_peripherals() {
          fi
     done
 
-    # re-register existing peripherals
-    new_peripherals=''
-    lsusb | while read discovered_peripheral
-    do
-        id=$(echo "${discovered_peripheral}" | awk -F' ' '{print $6}')
-        busnum=$(echo "${discovered_peripheral}" | awk -F' ' '{print $2}')
-        devnum=$(echo "${discovered_peripheral}" | awk -F'[ :]' '{print $4}')
-        bus="/dev/bus/usb/${busnum}/"
 
-        if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]] && [[ "${new_peripherals}" != *"${id}"* ]]
-        then
-            echo "INFO: registering USB peripheral ${id} during startup. Adding it to Nuvla"
-            new_peripherals+=" ${id}"
-            nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
-        fi
-    done
 }
 
 

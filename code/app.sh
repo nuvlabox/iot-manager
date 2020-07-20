@@ -66,7 +66,8 @@ check_existing_peripherals() {
         fi
     done
 
-
+    echo "INFO: existing peripherals -> ${existing_peripherals}"
+    echo "INFO: obsolete peripherals -> ${old_peripherals}"
     for old in ${old_peripherals}
     do
         if [[ "${existing_peripherals}" != *"${old}"* ]]

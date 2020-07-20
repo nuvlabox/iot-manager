@@ -165,7 +165,7 @@ fi
 ########
 ## If this is an update, we need to compare the data with the existing peripheral
 ########
-if [ -z existing_peripheral_identifier ]
+if [[ -z ${existing_peripheral_identifier} ]]
 then
     echo "INFO: posting new peripheral to Nuvla: ${json}"
 

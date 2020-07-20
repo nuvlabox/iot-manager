@@ -44,11 +44,11 @@ fi
 
 nuvla-client-login "${nuvla_endpoint}" "${shared_directory}" "${cookies_file}" "${extra_flags}"
 
-# Now we can push the resource
+# Now we can edit the resource
 (curl -XPUT --fail \
     ${nuvla_endpoint}/api/${resource_id} \
     -H content-type:application/json \
     -H accept:application/json \
     -b ${cookies_file} \
     ${extra_flags} \
-    -d "${payload}" | jq -re '."resource-id"') || { echo "WARN: Cannot create resource ${payload} in Nuvla"; exit 1; }
+    -d "${payload}" | jq -re .) || { echo "WARN: Cannot create resource ${payload} in Nuvla"; exit 1; }

@@ -30,7 +30,7 @@ check_existing_peripherals() {
 
     # update existing peripherals if needed
     old_peripherals=$(ls "${PERIPHERALS_DIR}" | sort)
-    new_peripherals=''
+    existing_peripherals=''
     lsusb | while read discovered_peripheral
     do
         id=$(echo "${discovered_peripheral}" | awk -F' ' '{print $6}')
@@ -38,37 +38,54 @@ check_existing_peripherals() {
         devnum=$(echo "${discovered_peripheral}" | awk -F'[ :]' '{print $4}')
         bus="/dev/bus/usb/${busnum}/"
 
-        if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]] && [[ "${new_peripherals}" != *"${id}"* ]]
+        if [[ "${existing_peripherals}" != *"${id}"* ]]
         then
-            echo "INFO: registering new USB peripheral ${id} during startup. Adding it to Nuvla"
-            new_peripherals+=" ${id}"
-            nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
-        else
-            interface=$(jq -r 'select(.interface != null) | .interface' "${PERIPHERALS_DIR}/${id}")
-            if [[ "${interface}" == "USB" ]]
+            if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]]
             then
-                echo "INFO: comparing USB peripheral info with existing registry - ${id}"
-                nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} "update" &
+                echo "INFO: registering new USB peripheral ${id} during startup. Adding it to Nuvla"
+                nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
+            else
+                interface=$(jq -r 'select(.interface != null) | .interface' "${PERIPHERALS_DIR}/${id}")
+                if [[ "${interface}" == "USB" ]]
+                then
+                    peripheral_nuvla_id=$(jq -r 'select(.id != null) | .id' "${PERIPHERALS_DIR}/${id}")
+                    if [[ -z ${peripheral_nuvla_id} ]]
+                    then
+                        echo "WARN: one of the existing peripherals is registered locally but without a Nuvla ID!"
+                        echo "INFO: recreating peripheral resource ${id}"
+                        rm -f "${PERIPHERALS_DIR}/${id}"
+                        nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
+                    else
+                        echo "INFO: comparing USB peripheral info with existing registry - ${id}"
+                        nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} "${id}" &
+                    fi
+                fi
             fi
+
+            existing_peripherals+=" ${id}"
         fi
     done
 
 
     for old in ${old_peripherals}
     do
-        interface=$(jq -r 'select(.interface != null) | .interface' "${PERIPHERALS_DIR}/${old}")
-        if [[ "${interface}" == "USB" ]]
+        if [[ "${existing_peripherals}" != *"${old}"* ]]
         then
-            peripheral_nuvla_id=$(jq -r 'select(.id != null) | .id' "${PERIPHERALS_DIR}/${old}")
-            if [[ -z ${peripheral_nuvla_id} ]]
+            interface=$(jq -r 'select(.interface != null) | .interface' "${PERIPHERALS_DIR}/${old}")
+            if [[ "${interface}" == "USB" ]]
             then
-                echo "WARN: found an old USB peripheral without a Nuvla ID...removing it locally only!"
-                rm -f "${PERIPHERALS_DIR}/${old}"
-            else
-                echo "INFO: deleting old USB peripheral from Nuvla"
-                nuvlabox-delete-usb-peripheral --nuvla-id=${peripheral_nuvla_id} --peripheral-file="${old}"
+                echo "INFO: removing old peripheral ${old} that is no longer in the system"
+                peripheral_nuvla_id=$(jq -r 'select(.id != null) | .id' "${PERIPHERALS_DIR}/${old}")
+                if [[ -z ${peripheral_nuvla_id} ]]
+                then
+                    echo "WARN: old USB peripheral ${old} doesn't have a Nuvla ID...removing it locally only!"
+                    rm -f "${PERIPHERALS_DIR}/${old}"
+                else
+                    echo "INFO: deleting old USB peripheral ${old} from Nuvla"
+                    nuvlabox-delete-usb-peripheral --nuvla-id=${peripheral_nuvla_id} --peripheral-file="${old}"
+                fi
             fi
-         fi
+        fi
     done
 
 

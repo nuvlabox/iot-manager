@@ -43,7 +43,7 @@ check_existing_peripherals() {
             if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]]
             then
                 echo "INFO: registering new USB peripheral ${id} during startup. Adding it to Nuvla"
-                nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
+                nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2}
             else
                 interface=$(jq -r 'select(.interface != null) | .interface' "${PERIPHERALS_DIR}/${id}")
                 if [[ "${interface}" == "USB" ]]
@@ -54,15 +54,15 @@ check_existing_peripherals() {
                         echo "WARN: one of the existing peripherals is registered locally but without a Nuvla ID!"
                         echo "INFO: recreating peripheral resource ${id}"
                         rm -f "${PERIPHERALS_DIR}/${id}"
-                        nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
+                        nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2}
                     else
                         echo "INFO: comparing USB peripheral info with existing registry - ${id}"
-                        nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} "${id}" &
+                        nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} "${id}"
                     fi
                 fi
             fi
 
-            existing_peripherals+=" ${id}"
+            existing_peripherals="${existing_peripherals} ${id}"
         fi
     done
 
@@ -83,7 +83,7 @@ check_existing_peripherals() {
                     rm -f "${PERIPHERALS_DIR}/${old}"
                 else
                     echo "INFO: deleting old USB peripheral ${old} from Nuvla"
-                    nuvlabox-delete-usb-peripheral --nuvla-id=${peripheral_nuvla_id} --peripheral-file="${old}"
+                    nuvlabox-delete-usb-peripheral --nuvla-id=${peripheral_nuvla_id} --peripheral-file="${old}" &
                 fi
             fi
         fi

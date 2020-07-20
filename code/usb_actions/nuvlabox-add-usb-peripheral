@@ -5,6 +5,7 @@
 #
 
 set -e
+set -x
 
 buspath=$1
 devnumber=$2
@@ -181,7 +182,8 @@ else
                         --unchanged-line-format="" \
                         --new-line-format="%L" \
                         <(jq . -M -S < "${nuvlabox_peripheral_filename}") \
-                        <(jq . -M -S <<< "${json}"))
+                        <(jq . -M -S <<< "${json}"))  || \
+                  echo "WARN: an existing peripheral has changed its configuration. Preparing to update ${existing_peripheral_identifier}"
 
     formed_diff_json="{ $(echo ${differences} | sed 's/\(.*\),/\1}/')"
 

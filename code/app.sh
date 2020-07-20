@@ -15,6 +15,7 @@ Arguments:\n
 "
 
 set -e
+set -x
 
 SOME_ARG="$1"
 

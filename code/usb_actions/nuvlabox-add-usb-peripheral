@@ -5,7 +5,6 @@
 #
 
 set -e
-set -x
 
 buspath=$1
 devnumber=$2

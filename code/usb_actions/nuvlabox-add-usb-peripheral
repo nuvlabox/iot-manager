@@ -192,7 +192,7 @@ else
         set -e
         echo "WARN: an existing peripheral has changed its configuration. Preparing to update ${existing_peripheral_identifier}"
 
-        formed_diff_json="{ $(echo ${differences} | sed 's/\(.*\),/\1/') }"
+        formed_diff_json="{ $(echo ${differences%","}) }"
 
         nuvla_id=$(jq -r .id)
         nuvla-client-post ${nuvla_id} "${formed_diff_json}"

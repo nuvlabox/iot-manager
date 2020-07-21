@@ -31,7 +31,7 @@ check_existing_peripherals() {
 
     # update existing peripherals if needed
     old_peripherals=$(ls "${PERIPHERALS_DIR}" | sort)
-    existing_peripherals=''
+    existing_peripherals=$(lsusb | awk '{print $6}' | sort)
     lsusb | while read discovered_peripheral
     do
         id=$(echo "${discovered_peripheral}" | awk -F' ' '{print $6}')
@@ -39,38 +39,29 @@ check_existing_peripherals() {
         devnum=$(echo "${discovered_peripheral}" | awk -F'[ :]' '{print $4}')
         bus="/dev/bus/usb/${busnum}/"
 
-        if [[ "${existing_peripherals}" != *"${id}"* ]]
+        if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]]
         then
-            if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]]
+            echo "INFO: registering new USB peripheral ${id} during startup. Adding it to Nuvla"
+            nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
+        else
+            interface=$(jq -r 'select(.interface != null) | .interface' "${PERIPHERALS_DIR}/${id}")
+            if [[ "${interface}" == "USB" ]]
             then
-                echo "INFO: registering new USB peripheral ${id} during startup. Adding it to Nuvla"
-                nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2}
-            else
-                interface=$(jq -r 'select(.interface != null) | .interface' "${PERIPHERALS_DIR}/${id}")
-                if [[ "${interface}" == "USB" ]]
+                peripheral_nuvla_id=$(jq -r 'select(.id != null) | .id' "${PERIPHERALS_DIR}/${id}")
+                if [[ -z ${peripheral_nuvla_id} ]]
                 then
-                    peripheral_nuvla_id=$(jq -r 'select(.id != null) | .id' "${PERIPHERALS_DIR}/${id}")
-                    if [[ -z ${peripheral_nuvla_id} ]]
-                    then
-                        echo "WARN: one of the existing peripherals is registered locally but without a Nuvla ID!"
-                        echo "INFO: recreating peripheral resource ${id}"
-                        rm -f "${PERIPHERALS_DIR}/${id}"
-                        nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2}
-                    else
-                        echo "INFO: comparing USB peripheral info with existing registry - ${id}"
-                        nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} "${id}"
-                    fi
+                    echo "WARN: one of the existing peripherals is registered locally but without a Nuvla ID!"
+                    echo "INFO: recreating peripheral resource ${id}"
+                    rm -f "${PERIPHERALS_DIR}/${id}"
+                    nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
+                else
+                    echo "INFO: comparing USB peripheral info with existing registry - ${id}"
+                    nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} "${id}" &
                 fi
             fi
-
-            existing_peripherals="${existing_peripherals} ${id}"
         fi
     done
 
-    existing_peripherals=$(lsusb | awk '{print $6}' | sort)
-
-    echo "INFO: existing peripherals -> ${existing_peripherals}"
-    echo "INFO: obsolete peripherals -> ${old_peripherals}"
     for old in ${old_peripherals}
     do
         if [[ "${existing_peripherals}" != *"${old}"* ]]
@@ -91,8 +82,6 @@ check_existing_peripherals() {
             fi
         fi
     done
-
-
 }
 
 

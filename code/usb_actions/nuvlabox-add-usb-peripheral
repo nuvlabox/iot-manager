@@ -194,8 +194,8 @@ else
 
         formed_diff_json="{ $(echo ${differences%","}) }"
 
-        nuvla_id=$(jq -r .id)
-        nuvla-client-post ${nuvla_id} "${formed_diff_json}"
+        nuvla_id=$(jq -r .id "${nuvlabox_peripheral_filename}")
+        nuvla-client-put ${nuvla_id} "${formed_diff_json}"
         new_peripheral_data=$(echo $(cat "${nuvlabox_peripheral_filename}") " " "${formed_diff_json}"  | jq -s add)
         echo "${new_peripheral_data}" | jq . > ${nuvlabox_peripheral_filename} && \
           echo "INFO: successfully updated USB peripheral ${existing_peripheral_identifier} with ${formed_diff_json}"

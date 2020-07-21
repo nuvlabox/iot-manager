@@ -178,20 +178,29 @@ else
     # existing_peripheral_identifier is set, meaning that this peripheral exists already, so this is an UPDATE
 
     nuvlabox_peripheral_filename="${PERIPHERALS_DIR}/${existing_peripheral_identifier}"
+
+    # diff returns >0 when there's a diff, and that's not an error for us
+    set +e
     differences=$(diff --old-line-format="" \
                         --unchanged-line-format="" \
                         --new-line-format="%L" \
                         <(jq . -M -S < "${nuvlabox_peripheral_filename}") \
-                        <(jq . -M -S <<< "${json}"))  || \
-                  echo "WARN: an existing peripheral has changed its configuration. Preparing to update ${existing_peripheral_identifier}"
+                        <(jq . -M -S <<< "${json}"))
 
-    formed_diff_json="{ $(echo ${differences} | sed 's/\(.*\),/\1}/')"
+    set -e
 
-    nuvla_id=$(jq -r .id)
-    nuvla-client-post ${nuvla_id} "${formed_diff_json}"
-    new_peripheral_data=$(echo $(cat "${nuvlabox_peripheral_filename}") " " "${formed_diff_json}"  | jq -s add)
-    echo "${new_peripheral_data}" | jq . > ${nuvlabox_peripheral_filename} && \
-      echo "INFO: successfully updated USB peripheral ${existing_peripheral_identifier} with ${formed_diff_json}"
+    if [ $? -gt 0 ]
+    then
+        echo "WARN: an existing peripheral has changed its configuration. Preparing to update ${existing_peripheral_identifier}"
+
+        formed_diff_json="{ $(echo ${differences} | sed 's/\(.*\),/\1/') }"
+
+        nuvla_id=$(jq -r .id)
+        nuvla-client-post ${nuvla_id} "${formed_diff_json}"
+        new_peripheral_data=$(echo $(cat "${nuvlabox_peripheral_filename}") " " "${formed_diff_json}"  | jq -s add)
+        echo "${new_peripheral_data}" | jq . > ${nuvlabox_peripheral_filename} && \
+          echo "INFO: successfully updated USB peripheral ${existing_peripheral_identifier} with ${formed_diff_json}"
+    fi
 fi
 
 

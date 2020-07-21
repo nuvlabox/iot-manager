@@ -187,10 +187,9 @@ else
                         <(jq . -M -S < "${nuvlabox_peripheral_filename}") \
                         <(jq . -M -S <<< "${json}"))
 
-    set -e
-
     if [ $? -gt 0 ]
     then
+        set -e
         echo "WARN: an existing peripheral has changed its configuration. Preparing to update ${existing_peripheral_identifier}"
 
         formed_diff_json="{ $(echo ${differences} | sed 's/\(.*\),/\1/') }"

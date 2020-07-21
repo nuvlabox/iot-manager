@@ -67,6 +67,8 @@ check_existing_peripherals() {
         fi
     done
 
+    existing_peripherals=$(lsusb | awk '{print $6}' | sort)
+
     echo "INFO: existing peripherals -> ${existing_peripherals}"
     echo "INFO: obsolete peripherals -> ${old_peripherals}"
     for old in ${old_peripherals}

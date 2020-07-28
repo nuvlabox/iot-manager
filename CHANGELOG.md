@@ -1,4 +1,9 @@
 # Changelog
+## [1.1.0] - 2020-07-28
+### Added 
+- double checking and update of existing USB peripherals on every restart
+### Changed
+- parallelize USB device info gathering
 ## [1.0.4] - 2020-07-01
 ### Added
 ### Changed

@@ -10,6 +10,7 @@ buspath=$1
 devnumber=$2
 nb_id=$3
 nb_version=$4
+existing_peripheral_identifier=$5
 
 if [[ -z ${buspath} ]] || [[ -z ${devnumber} ]] || [[ -z ${nb_id} ]] || [[ -z ${nb_version} ]]
 then
@@ -88,7 +89,8 @@ then
     classes='"UNKNOWN",'
 fi
 
-classes_final=$(echo "["${classes} | sed 's/,$/]/')
+ordered_classes=$(echo ${classes} | tr "," "\n" | sort | sed '/^[[:space:]]*$/d' | tr '\n' ',')
+classes_final=$(echo "["${ordered_classes} | sed 's/,$/]/')
 
 interface="USB"
 ### TODO: this availability check should come from the system-manager
@@ -96,6 +98,17 @@ available=true
 ###
 
 description="${interface} ${identifier} ${vendor} ${product}"
+name="UNNAMED USB Device"
+
+if [[ ! -z ${product} ]]
+then
+    name="${product}"
+else
+    if [[ ! -z ${description} ]]
+    then
+        name=${description}
+    fi
+fi
 
 add_string_json() {
     # $1 is original json
@@ -104,15 +117,20 @@ add_string_json() {
     echo $1 | jq --arg newarg "${3}" --arg key "${2}" '. + {($key): $newarg}'
 }
 
+# Create the payload
 json=$( jq -n \
             --arg parent "${nb_id}" \
             --argjson version ${nb_version} \
             --argjson available ${available} \
             --arg interface "${interface}" \
             --argjson classes "${classes_final}" \
+            --arg name "${name}" \
+            --arg description "${description}" \
             --arg identifier "${identifier}" \
             '{  parent: $parent,
                 version: $version,
+                name: $name,
+                description: $description,
                 available: $available,
                 interface: $interface,
                 classes: $classes,
@@ -120,15 +138,7 @@ json=$( jq -n \
 
 if [[ ! -z ${product} ]]
 then
-    name="${product}"
     json=$(add_string_json "${json}" "product" "${product}")
-else
-    if [[ ! -z ${description} ]]
-    then
-        name=${description}
-        json=$(add_string_json "${json}" "description" "${description}")
-        json=$(add_string_json "${json}" "name" "${name}")
-    fi
 fi
 
 if [[ ! -z ${vendor} ]]
@@ -151,9 +161,44 @@ then
     json=$(add_string_json "${json}" "serial-number" "${device_serial}")
 fi
 
-echo "INFO: posting new peripheral to Nuvla: ${json}"
+########
+## If this is an update, we need to compare the data with the existing peripheral
+########
+if [[ -z ${existing_peripheral_identifier} ]]
+then
+    echo "INFO: posting new peripheral to Nuvla: ${json}"
 
-(id=$(nuvla-client-post "nuvlabox-peripheral" "${json}") && \
-    nuvla_id=$(echo "${id}" | awk -F' ' '{print $NF}') && \
-    echo ${json} | jq --arg id "${nuvla_id}" '. + {id: $id}' > ${nuvlabox_peripheral_filename} && \
-    echo "INFO: successfully registered peripheral ${identifier}" ) || echo "ERR: could not register new USB device ${identifier}!"
+    (id=$(nuvla-client-post "nuvlabox-peripheral" "${json}") && \
+        nuvla_id=$(echo "${id}" | awk -F' ' '{print $NF}') && \
+        echo ${json} | jq --arg id "${nuvla_id}" '. + {id: $id}' > ${nuvlabox_peripheral_filename} && \
+        echo "INFO: successfully registered peripheral ${identifier}" ) || echo "ERR: could not register new USB device ${identifier}!"
+
+else
+    # existing_peripheral_identifier is set, meaning that this peripheral exists already, so this is an UPDATE
+
+    nuvlabox_peripheral_filename="${PERIPHERALS_DIR}/${existing_peripheral_identifier}"
+
+    # diff returns >0 when there's a diff, and that's not an error for us
+    set +e
+    differences=$(diff --old-line-format="" \
+                        --unchanged-line-format="" \
+                        --new-line-format="%L" \
+                        <(jq . -M -S < "${nuvlabox_peripheral_filename}") \
+                        <(jq . -M -S <<< "${json}"))
+
+    if [[ $? -gt 0 ]] && [[ ! -z ${differences} ]]
+    then
+        set -e
+        echo "WARN: an existing peripheral has changed its configuration. Preparing to update ${existing_peripheral_identifier}"
+
+        formed_diff_json="{ $(echo ${differences%","}) }"
+
+        nuvla_id=$(jq -r .id "${nuvlabox_peripheral_filename}")
+        nuvla-client-put ${nuvla_id} "${formed_diff_json}"
+        new_peripheral_data=$(echo $(cat "${nuvlabox_peripheral_filename}") " " "${formed_diff_json}"  | jq -s add)
+        echo "${new_peripheral_data}" | jq . > ${nuvlabox_peripheral_filename} && \
+          echo "INFO: successfully updated USB peripheral ${existing_peripheral_identifier} with ${formed_diff_json}"
+    fi
+fi
+
+

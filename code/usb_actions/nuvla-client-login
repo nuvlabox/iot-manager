@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+#
+# Generic client to PUT a payload to Nuvla
+#
+
+set -o pipefail
+
+nuvla_endpoint=$1
+shared_directory=$2
+cookies_file=$3
+extra_flags=$4
+
+api_key=$(jq -r '."api-key"' ${shared_directory}/.activated)
+secret_key=$(jq -r '."secret-key"' ${shared_directory}/.activated)
+
+login() {
+
+    # Then we have to login first
+    session_template='{
+        "template": {
+            "href": "session-template/api-key",
+            "key": "'${api_key}'",
+            "secret": "'${secret_key}'"
+        }
+    }'
+
+    (curl -XPOST --fail \
+        ${nuvla_endpoint}/api/session \
+        -H content-type:application/json \
+        -H accept:application/json \
+        -c ${cookies_file} \
+        ${extra_flags} \
+        -d "${session_template}" | jq -e '.status==201' &>/dev/null) || { echo "ERR: can not login to ${nuvla_endpoint}"; exit 1; }
+}
+
+if [[ -f ${cookies_file} ]]
+then
+    # Cookies exist, but let's first see if they are still valid
+    session_alive=$(curl -XGET --fail \
+                        ${nuvla_endpoint}/api/session \
+                        -H accept:application/json \
+                        -b ${cookies_file} \
+                        ${extra_flags} | jq '.count > 0')
+
+    if [[ "${session_alive}" != "true" ]]
+    then
+        login
+    fi
+else
+    login
+fi

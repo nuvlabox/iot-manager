@@ -28,27 +28,11 @@ check_existing_peripherals() {
     # $1 is the NuvlaBox ID
     # $2 is the NuvlaBox version
 
+    # update existing peripherals if needed
     old_peripherals=$(ls "${PERIPHERALS_DIR}" | sort)
+    existing_peripherals=$(lsusb | awk '{print $6}' | uniq | sort)
 
-    for old in ${old_peripherals}
-    do
-        interface=$(jq -r 'select(.interface != null) | .interface' "${PERIPHERALS_DIR}/${old}")
-        if [[ "${interface}" == "USB" ]]
-        then
-            peripheral_nuvla_id=$(jq -r 'select(.id != null) | .id' "${PERIPHERALS_DIR}/${old}")
-            if [[ -z ${peripheral_nuvla_id} ]]
-            then
-                echo "WARN: found an old USB peripheral without a Nuvla ID...removing it locally only!"
-                rm -f "${PERIPHERALS_DIR}/${old}"
-            else
-                echo "INFO: deleting old USB peripheral from Nuvla"
-                nuvlabox-delete-usb-peripheral --nuvla-id=${peripheral_nuvla_id} --peripheral-file="${old}"
-            fi
-         fi
-    done
-
-    # re-register existing peripherals
-    new_peripherals=''
+    progress=''
     lsusb | while read discovered_peripheral
     do
         id=$(echo "${discovered_peripheral}" | awk -F' ' '{print $6}')
@@ -56,11 +40,53 @@ check_existing_peripherals() {
         devnum=$(echo "${discovered_peripheral}" | awk -F'[ :]' '{print $4}')
         bus="/dev/bus/usb/${busnum}/"
 
-        if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]] && [[ "${new_peripherals}" != *"${id}"* ]]
+        # to avoid registering duplicates
+        if [[ "${progress}" != *"${id}"* ]]
         then
-            echo "INFO: registering USB peripheral ${id} during startup. Adding it to Nuvla"
-            new_peripherals+=" ${id}"
-            nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
+            if [[ ! -f "${PERIPHERALS_DIR}/${id}" ]]
+            then
+                echo "INFO: registering new USB peripheral ${id} during startup. Adding it to Nuvla"
+                nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
+            else
+                interface=$(jq -r 'select(.interface != null) | .interface' "${PERIPHERALS_DIR}/${id}")
+                if [[ "${interface}" == "USB" ]]
+                then
+                    peripheral_nuvla_id=$(jq -r 'select(.id != null) | .id' "${PERIPHERALS_DIR}/${id}")
+                    if [[ -z ${peripheral_nuvla_id} ]]
+                    then
+                        echo "WARN: one of the existing peripherals is registered locally but without a Nuvla ID!"
+                        echo "INFO: recreating peripheral resource ${id}"
+                        rm -f "${PERIPHERALS_DIR}/${id}"
+                        nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} &
+                    else
+                        echo "INFO: comparing USB peripheral info with existing registry - ${id}"
+                        nuvlabox-add-usb-peripheral ${bus} ${devnum} ${1} ${2} "${id}" &
+                    fi
+                fi
+            fi
+
+            progress="${progress} ${id}"
+        fi
+    done
+
+    for old in ${old_peripherals}
+    do
+        if [[ "${existing_peripherals}" != *"${old}"* ]]
+        then
+            interface=$(jq -r 'select(.interface != null) | .interface' "${PERIPHERALS_DIR}/${old}")
+            if [[ "${interface}" == "USB" ]]
+            then
+                echo "INFO: removing old peripheral ${old} that is no longer in the system"
+                peripheral_nuvla_id=$(jq -r 'select(.id != null) | .id' "${PERIPHERALS_DIR}/${old}")
+                if [[ -z ${peripheral_nuvla_id} ]]
+                then
+                    echo "WARN: old USB peripheral ${old} doesn't have a Nuvla ID...removing it locally only!"
+                    rm -f "${PERIPHERALS_DIR}/${old}"
+                else
+                    echo "INFO: deleting old USB peripheral ${old} from Nuvla"
+                    nuvlabox-delete-usb-peripheral --nuvla-id=${peripheral_nuvla_id} --peripheral-file="${old}" &
+                fi
+            fi
         fi
     done
 }

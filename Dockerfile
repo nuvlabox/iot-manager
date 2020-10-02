@@ -16,7 +16,7 @@ LABEL travis.build.web.url=${TRAVIS_BUILD_WEB_URL}
 
 RUN apt update && apt-get install -y --no-install-recommends \
                     usbutils=1:007-4+deb9u1 \
-                    curl=7.52.1-5+deb9u10 \
+                    curl=7.52.1-5+deb9u12 \
                     udev=232-25+deb9u12 \
                     jq=1.5+dfsg-1.3 \
                     inotify-tools=3.14-2
@@ -29,7 +29,7 @@ RUN apt-get clean autoclean \
 # inside the Docker image and move the /dev mount into a tmpmount inside the container
 # See Balena's example: https://github.com/balena-io-library/base-images/blob/master/balena-base-images/armv7hf/debian/stretch/run/entry.sh
 
-COPY code/app.sh /opt/nuvlabox/
+COPY code/app.sh code/license.sh LICENSE /opt/nuvlabox/
 COPY code/usb_actions /usr/sbin/
 
 RUN chmod +x /usr/sbin/nuvla*
@@ -37,5 +37,7 @@ RUN chmod +x /usr/sbin/nuvla*
 WORKDIR /opt/nuvlabox/
 
 VOLUME /srv/nuvlabox/shared
+
+ONBUILD RUN ./license.sh
 
 ENTRYPOINT ["./app.sh"]

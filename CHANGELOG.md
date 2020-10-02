@@ -1,4 +1,8 @@
 # Changelog
+## [1.1.1] - 2020-10-02
+### Added 
+- ONBUILD SixSq license dump
+### Changed
 ## [1.1.0] - 2020-07-28
 ### Added 
 - double checking and update of existing USB peripherals on every restart

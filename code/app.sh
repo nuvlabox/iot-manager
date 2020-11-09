@@ -29,7 +29,7 @@ check_existing_peripherals() {
     # $2 is the NuvlaBox version
 
     # update existing peripherals if needed
-    old_peripherals=$(ls "${PERIPHERALS_DIR}" | sort)
+    old_peripherals=$(ls -p "${PERIPHERALS_DIR}" | grep -v / | sort)
     existing_peripherals=$(lsusb | awk '{print $6}' | uniq | sort)
 
     progress=''

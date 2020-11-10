@@ -1,4 +1,8 @@
 # Changelog
+## [1.1.2] - 2020-11-10
+### Added
+### Changed
+- fixed existing USB devices check, for bug with conflict between files and directories in peripherals folders
 ## [1.1.1] - 2020-10-02
 ### Added 
 - ONBUILD SixSq license dump

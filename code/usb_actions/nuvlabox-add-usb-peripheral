@@ -111,7 +111,7 @@ do
     continue
   fi
 
-  capacity_gb=$(printf %.3f "GB" "$(( $(cat $$block_size) * $(cat $$logical_block_size) ))e-9")
+  capacity_gb=$(printf %.3f "GB" "$(( $(cat $block_size) * $(cat $logical_block_size) ))e-9")
   unit=$block_device
 
   resource_json="{\"unit\": \"${unit}\", \"capacity\": \"${capacity_gb}\""

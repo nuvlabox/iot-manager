@@ -102,23 +102,19 @@ for disk in ${matching_usb_disks}
 do
   block_device=$(readlink -f ${disk})
   device_name=$(echo $block_device | awk -F'/' '{print $NF}')
-  # this file returns the number of block sectors
-  block_size="${ROOTFS}/sys/class/block/${device_name}/size"
-  # this file returns the size of each block, in bytes
-  logical_block_size="${ROOTFS}/sys/block/${device_name}/queue/logical_block_size"
-  if [ ! -f $block_size ] && [ ! -f $logical_block_size ]
-  then
-    continue
-  fi
 
-  capacity_gb=$(printf %.3f"GB" "$(( $(cat $block_size) * $(cat $logical_block_size) ))e-9")
+  partitions=$(lsblk $block_device -o NAME,MOUNTPOINT,FSUSE%,SIZE -f -i -n -P)
+  export $(echo "${partitions}" | grep "\"$device_name\"" | tr -d '%' | tr -d '"')
+
+  capacity_gb=$SIZE
   unit=$block_device
 
   resource_json="{\"unit\": \"${unit}\", \"capacity\": \"${capacity_gb}\""
-  if [[ "${mounts}" == *"${block_device}"* ]]
+  if [ -n "$MOUNTPOINT" ] && [ -n "FSUSE" ]
   then
     # disk is mounted so we can get its usage
-    load=$(df -h $block_device --output=pcent | tail -1 | tr -d ' ' | tr -d '%')
+#    load=$(df -h $block_device --output=pcent | tail -1 | tr -d ' ' | tr -d '%')
+    load=$FSUSE
     resource_json="${resource_json},\"load\": ${load}}"
   else
     resource_json="${resource_json}}"

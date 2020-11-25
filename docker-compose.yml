@@ -7,6 +7,7 @@ services:
     volumes:
       - /:/rootfs:ro
       - /dev:/dev:ro
+      - /run/udev/control:/run/udev/control:ro
     environment:
       - NUVLABOX_UUID=${NUVLABOX_UUID}
       - NUVLA_ENDPOINT=nuvla.io

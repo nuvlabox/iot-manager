@@ -150,6 +150,13 @@ add_string_json() {
     echo $1 | jq --arg newarg "${3}" --arg key "${2}" '. + {($key): $newarg}'
 }
 
+add_list_json() {
+    # $1 is original json
+    # $2 is attribute name
+    # $3 is JSON value
+    echo $1 | jq --argjson newarg "${3}" --arg key "${2}" '. + {($key): $newarg}'
+}
+
 # Create the payload
 json=$( jq -n \
             --arg parent "${nb_id}" \
@@ -171,7 +178,7 @@ json=$( jq -n \
 
 if [[ ! -z ${resources} ]]
 then
-    json=$(add_string_json "${json}" "resources" "[${resources}]")
+    json=$(add_list_json "${json}" "resources" "[${resources}]")
 fi
 
 if [[ ! -z ${product} ]]

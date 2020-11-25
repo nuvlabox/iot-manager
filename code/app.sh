@@ -106,6 +106,7 @@ fi
 export SHARED="/srv/nuvlabox/shared"
 export PERIPHERALS_DIR="${SHARED}/.peripherals"
 export CONTEXT_FILE="${SHARED}/.context"
+export ROOTFS="/rootfs"
 
 timeout 120 bash -c -- "until [[ -d $PERIPHERALS_DIR ]]
 do

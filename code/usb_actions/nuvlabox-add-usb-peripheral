@@ -92,6 +92,42 @@ fi
 ordered_classes=$(echo ${classes} | tr "," "\n" | sort | sed '/^[[:space:]]*$/d' | tr '\n' ',')
 classes_final=$(echo "["${ordered_classes} | sed 's/,$/]/')
 
+# Check if this is an external disk/flash drive, and get respective resource information
+disk_by_id="/dev/disk/by-id"
+matching_usb_disks=$(ls -d ${disk_by_id}/* | grep usb | grep "${device_serial}")
+mounts=$(mount)
+gb_in_bytes=1000000000
+resources=''
+for disk in ${matching_usb_disks}
+do
+  block_device=$(readlink -f ${disk})
+  # this file returns the number of block sectors
+  block_size="${ROOTFS}/sys/class/block/${disk}/size"
+  # this file returns the size of each block, in bytes
+  logical_block_size="${ROOTFS}/sys/block/${disk}/queue/logical_block_size"
+  if [ ! -f $block_size ] && [ ! -f $logical_block_size ]
+  then
+    continue
+  fi
+
+  capacity_gb=$(printf %.3f "GB" "$(( $(cat $$block_size) * $(cat $$logical_block_size) ))e-9")
+  unit=$block_device
+
+  resource_json="{\"unit\": \"${unit}\", \"capacity\": \"${capacity_gb}\""
+  if [[ "${mounts}" == *"${block_device}"* ]]
+  then
+    # disk is mounted so we can get its usage
+    load=$(df -h $block_device --output=pcent | tail -1 | tr -d ' ' | tr -d '%')
+    resource_json="${resource_json},\"load\": ${load}}"
+  else
+    resource_json="${resource_json}}"
+  fi
+
+  resources="${resources}${resource_json},"
+done
+resources=$(echo "${resources}" | sed 's/\(.*\),/\1 /')
+
+
 interface="USB"
 ### TODO: this availability check should come from the system-manager
 available=true
@@ -135,6 +171,11 @@ json=$( jq -n \
                 interface: $interface,
                 classes: $classes,
                 identifier: $identifier}' )
+
+if [[ ! -z ${resources} ]]
+then
+    json=$(add_string_json "${json}" "resources" "[${resources}]")
+fi
 
 if [[ ! -z ${product} ]]
 then

@@ -109,16 +109,20 @@ do
   capacity_gb=$SIZE
   unit=$block_device
 
-  resource_json="{\"unit\": \"${unit}\", \"capacity\": \"${capacity_gb}\""
-  if [ -n "$MOUNTPOINT" ] && [ -n "FSUSE" ]
-  then
-    # disk is mounted so we can get its usage
-#    load=$(df -h $block_device --output=pcent | tail -1 | tr -d ' ' | tr -d '%')
-    load=$FSUSE
-    resource_json="${resource_json},\"load\": ${load}}"
-  else
-    resource_json="${resource_json}}"
-  fi
+  resource_json="{\"unit\": \"${unit}\", \"capacity\": \"${capacity_gb}\"}"
+
+  # this section is commented because load changes with time, and at the moment this peripheral manager is
+  # opportunistic. It doesn't monitor peripherals periodically.
+  # If that changes, then uncomment this sections
+#  if [ -n "$MOUNTPOINT" ] && [ -n "FSUSE" ]
+#  then
+#    # disk is mounted so we can get its usage
+##    load=$(df -h $block_device --output=pcent | tail -1 | tr -d ' ' | tr -d '%')
+#    load=$FSUSE
+#    resource_json="${resource_json},\"load\": ${load}}"
+#  else
+#    resource_json="${resource_json}}"
+#  fi
 
   resources="${resources}${resource_json},"
 done

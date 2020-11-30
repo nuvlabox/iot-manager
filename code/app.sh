@@ -132,6 +132,12 @@ done"
 nuvlabox_id=$(jq -r .id ${CONTEXT_FILE})
 nuvlabox_version=$(jq -r .version ${CONTEXT_FILE})
 source $NUVLA_CONF_FILE
+
+if [[ "${NUVLA_ENDPOINT}" != "https://"* ]] && [[ "${NUVLA_ENDPOINT}" != "http://"* ]]
+then
+  NUVLA_ENDPOINT="https://${NUVLA_ENDPOINT}"
+fi
+
 export NUVLA_ENDPOINT NUVLA_ENDPOINT_INSECURE
 
 echo "INFO: checking for existing peripherals..."

@@ -21,16 +21,6 @@ then
 fi
 
 nuvla_endpoint=${NUVLA_ENDPOINT:-nuvla.io}
-#
-#if [[ "${nuvla_endpoint}" != "https://"* ]] && [[ "${nuvla_endpoint}" != "http://"* ]]
-#then
-#  nuvla_endpoint="https://${nuvla_endpoint}"
-#fi
-#
-#while [[ "${nuvla_endpoint: -1}" == "/" ]]
-#do
-#  nuvla_endpoint=$(echo "${nuvla_endpoint:: -1}")
-#done
 
 shared_directory=${SHARED:-/srv/nuvlabox/shared}
 cookies_file="${shared_directory}/cookies"

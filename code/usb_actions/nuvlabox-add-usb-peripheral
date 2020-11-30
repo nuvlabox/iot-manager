@@ -219,7 +219,7 @@ if [[ -z ${existing_peripheral_identifier} ]]
 then
     if [[ ! -f "${nuvlabox_peripheral_filename}" ]]
     then
-      echo "INFO: posting new peripheral to Nuvla: ${json}"
+      echo "INFO: posting new peripheral ${identifier} to Nuvla at ${NUVLA_ENDPOINT}"
 
       (id=$(nuvla-client-post "nuvlabox-peripheral" "${json}") && \
           nuvla_id=$(echo "${id}" | awk -F' ' '{print $NF}') && \

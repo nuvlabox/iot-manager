@@ -98,8 +98,7 @@ disk_by_id="/dev/disk/by-id"
 resources=''
 if [[ -n "$device_serial" ]]
 then
-  matching_usb_disks=$(ls -d ${disk_by_id}/* | grep usb | grep "${device_serial}")
-  mounts=$(mount)
+  matching_usb_disks=$(ls -d ${disk_by_id}/* | grep usb | grep "${device_serial}" || echo '')
   for disk in ${matching_usb_disks}
   do
     block_device=$(readlink -f ${disk})
@@ -219,7 +218,7 @@ if [[ -z ${existing_peripheral_identifier} ]]
 then
     if [[ ! -f "${nuvlabox_peripheral_filename}" ]]
     then
-      echo "INFO: posting new peripheral to Nuvla: ${json}"
+      echo "INFO: posting new peripheral ${identifier} to Nuvla at ${NUVLA_ENDPOINT}"
 
       (id=$(nuvla-client-post "nuvlabox-peripheral" "${json}") && \
           nuvla_id=$(echo "${id}" | awk -F' ' '{print $NF}') && \

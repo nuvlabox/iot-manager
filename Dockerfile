@@ -19,7 +19,8 @@ RUN apt update && apt-get install -y --no-install-recommends \
                     curl \
                     udev \
                     jq \
-                    inotify-tools
+                    inotify-tools \
+                    ca-certificates
 
 RUN apt-get clean autoclean \
         && apt-get autoremove --yes \

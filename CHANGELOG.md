@@ -1,4 +1,10 @@
 # Changelog
+## [1.3.0] - 2020-12-04
+        ### Added 
+                  - ca-certificates for secure communication with Nuvla 
+                  - setup needed environment from shared storage volume
+        ### Changed
+                  - minor bug fixes and reduced logging noise
 ## [1.2.0] - 2020-11-26
         ### Added 
                   - reporting of disk capacity for USB flash drives

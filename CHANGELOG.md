@@ -1,4 +1,8 @@
 # Changelog
+## [1.3.1] - 2020-12-11
+        ### Added
+        ### Changed
+                  - disable TLS verification for usb peripherals
 ## [1.3.0] - 2020-12-04
         ### Added 
                   - ca-certificates for secure communication with Nuvla 

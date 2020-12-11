@@ -25,13 +25,8 @@ nuvla_endpoint=${NUVLA_ENDPOINT:-nuvla.io}
 shared_directory=${SHARED:-/srv/nuvlabox/shared}
 cookies_file="${shared_directory}/cookies"
 
-if [[ "${NUVLA_ENDPOINT_INSECURE}" == "True" ]]
-then
-    extra_flags="-k"
-else
-    extra_flags=""
-fi
-
+# just for now
+extra_flags="-k"
 nuvla-client-login "${nuvla_endpoint}" "${shared_directory}" "${cookies_file}" "${extra_flags}"
 
 # Now we can push the resource

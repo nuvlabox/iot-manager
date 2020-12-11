@@ -1,4 +1,8 @@
 # Changelog
+## [1.3.2] - 2020-12-11
+        ### Added
+        ### Changed
+                  - disable TLS verification for edits and deletes of usb peripherals
 ## [1.3.1] - 2020-12-11
         ### Added
         ### Changed

@@ -162,6 +162,58 @@ add_list_json() {
     echo $1 | jq --argjson newarg "${3}" --arg key "${2}" '. + {($key): $newarg}'
 }
 
+nuvlabox_add_peripheral() {
+  # Sends a POST request to the NuvlaBox Agent API, asking to register a new peripheral
+  # $1 is the request payload, which must match the nuvlabox-peripheral resource JSON schema
+
+  # Get the JSON payload
+  payload="$1"
+  echo "INFO: registering new NuvlaBox peripheral - ${payload}"
+
+  headers="-H content-type:application/json -H accept:application/json"
+
+  # Make the request to the NuvlaBox Agent API
+  response=$(curl -X POST ${agent_api_peripheral} ${headers} -d "${payload}" --write-out "%{http_code}")
+
+  # Extract the response and http code
+  http_code=$(echo ${response} | awk '{print $NF}')
+  output=$(echo ${response} | awk '{$NF=""; print $0}')
+
+  if [[ "${http_code}" = "201" ]]
+  then
+    echo "INFO: successfully registered new peripheral $(echo ${output} | jq -re '."resource-id"')"
+  else
+    echo "ERR: could not register new peripheral! Reason: ${response}"
+  fi
+}
+
+nuvlabox_edit_peripheral() {
+  # Sends a PUT request to the NuvlaBox Agent API, asking to register a new peripheral
+  # $1 is the request payload, which must match the nuvlabox-peripheral resource JSON schema
+
+  # Get the JSON payload
+  payload="$1"
+  # Get identifier
+  identifier="$2"
+  echo "INFO: editing NuvlaBox peripheral ${identifier} - ${payload}"
+
+  headers="-H content-type:application/json -H accept:application/json"
+
+  # Make the request to the NuvlaBox Agent API
+  response=$(curl -X PUT "${agent_api_peripheral}/${identifier}" ${headers} -d "${payload}" --write-out "%{http_code}")
+
+  # Extract the response and http code
+  http_code=$(echo ${response} | awk '{print $NF}')
+  output=$(echo ${response} | awk '{$NF=""; print $0}')
+
+  if [[ "${http_code}" = "200" ]]
+  then
+    echo "INFO: successfully updated peripheral ${identifier}: $(echo ${output} | jq -re '."resource-id"')"
+  else
+    echo "ERR: could not update peripheral ${identifier}! Reason: ${response}"
+  fi
+}
+
 # Create the payload
 json=$( jq -n \
             --arg parent "${nb_id}" \
@@ -220,10 +272,7 @@ then
     then
       echo "INFO: posting new peripheral ${identifier} to Nuvla at ${NUVLA_ENDPOINT}"
 
-      (id=$(nuvla-client-post "nuvlabox-peripheral" "${json}") && \
-          nuvla_id=$(echo "${id}" | awk -F' ' '{print $NF}') && \
-          echo ${json} | jq --arg id "${nuvla_id}" '. + {id: $id}' > ${nuvlabox_peripheral_filename} && \
-          echo "INFO: successfully registered peripheral ${identifier}" ) || echo "ERR: could not register new USB device ${identifier}!"
+      nuvlabox_add_peripheral "${json}"
     fi
 else
     # existing_peripheral_identifier is set, meaning that this peripheral exists already, so this is an UPDATE
@@ -245,8 +294,8 @@ else
 
         formed_diff_json="{ $(echo ${differences%","}) }"
 
-        nuvla_id=$(jq -r .id "${nuvlabox_peripheral_filename}")
-        nuvla-client-put ${nuvla_id} "${formed_diff_json}"
+        nuvlabox_edit_peripheral "${formed_diff_json}" "${existing_peripheral_identifier}"
+
         new_peripheral_data=$(echo $(cat "${nuvlabox_peripheral_filename}") " " "${formed_diff_json}"  | jq -s add)
         echo "${new_peripheral_data}" | jq . > ${nuvlabox_peripheral_filename} && \
           echo "INFO: successfully updated USB peripheral ${existing_peripheral_identifier} with ${formed_diff_json}"

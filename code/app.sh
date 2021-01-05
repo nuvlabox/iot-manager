@@ -108,6 +108,7 @@ export PERIPHERALS_DIR="${SHARED}/.peripherals"
 export CONTEXT_FILE="${SHARED}/.context"
 export NUVLA_CONF_FILE="${SHARED}/.nuvla-configuration"
 export ROOTFS="/rootfs"
+export agent_api_peripheral='http://localhost:5080/api/peripheral'
 
 timeout 120 bash -c -- "until [[ -d $PERIPHERALS_DIR ]]
 do

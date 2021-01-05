@@ -99,7 +99,6 @@ then
         devicepath=$(jq -r '."device-path"' "${PERIPHERALS_DIR}/${peripheral}")
         if [[ "${devicepath}" == "${device}" ]]
         then
-#            nuvla_id=$(jq -r '."id"' "${PERIPHERALS_DIR}/${peripheral}")
             try_delete "${peripheral}"
             break
         fi

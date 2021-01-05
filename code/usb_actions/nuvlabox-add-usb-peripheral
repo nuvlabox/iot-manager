@@ -272,10 +272,6 @@ then
     then
       echo "INFO: posting new peripheral ${identifier} to Nuvla at ${NUVLA_ENDPOINT}"
 
-#      (id=$(nuvla-client-post "nuvlabox-peripheral" "${json}") && \
-#          nuvla_id=$(echo "${id}" | awk -F' ' '{print $NF}') && \
-#          echo ${json} | jq --arg id "${nuvla_id}" '. + {id: $id}' > ${nuvlabox_peripheral_filename} && \
-#          echo "INFO: successfully registered peripheral ${identifier}" ) || echo "ERR: could not register new USB device ${identifier}!"
       nuvlabox_add_peripheral "${json}"
     fi
 else
@@ -298,19 +294,8 @@ else
 
         formed_diff_json="{ $(echo ${differences%","}) }"
 
-#        nuvla_id=$(jq -r .id "${nuvlabox_peripheral_filename}")
-
-#        (curl -XPUT --fail \
-#    ${nuvla_endpoint}/api/${resource_id} \
-#    -H content-type:application/json \
-#    -H accept:application/json \
-#    -b ${cookies_file} \
-#    ${extra_flags} \
-#    -d "${payload}" | jq -re .) || { echo "WARN: Cannot create resource ${payload} in Nuvla"; exit 1; }
-
         nuvlabox_edit_peripheral "${formed_diff_json}" "${existing_peripheral_identifier}"
 
-#        nuvla-client-put ${nuvla_id} "${formed_diff_json}"
         new_peripheral_data=$(echo $(cat "${nuvlabox_peripheral_filename}") " " "${formed_diff_json}"  | jq -s add)
         echo "${new_peripheral_data}" | jq . > ${nuvlabox_peripheral_filename} && \
           echo "INFO: successfully updated USB peripheral ${existing_peripheral_identifier} with ${formed_diff_json}"

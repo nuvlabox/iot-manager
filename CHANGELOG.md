@@ -1,4 +1,8 @@
 # Changelog
+## [1.4.0] - 2021-01-05
+### Added
+### Changed
+ - removed bash client for Nuvla API - using local agent API instead
 ## [1.3.2] - 2020-12-11
         ### Added
         ### Changed

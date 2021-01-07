@@ -106,8 +106,8 @@ fi
 export SHARED="/srv/nuvlabox/shared"
 export PERIPHERALS_DIR="${SHARED}/.peripherals"
 export CONTEXT_FILE="${SHARED}/.context"
-export NUVLA_CONF_FILE="${SHARED}/.nuvla-configuration"
 export ROOTFS="/rootfs"
+export agent_api='http://localhost:5080/api/healthcheck'
 export agent_api_peripheral='http://localhost:5080/api/peripheral'
 
 timeout 120 bash -c -- "until [[ -d $PERIPHERALS_DIR ]]
@@ -123,23 +123,15 @@ do
     sleep 3
 done"
 
-# Finds the nuvla conf file in the shared volume and extracts the Nuvla endpoint from there
-timeout 120 bash -c -- "until [[ -f $NUVLA_CONF_FILE ]]
+# Wait for Agent API
+timeout 120 bash -c -- "until curl -f $agent_api
 do
-    echo 'INFO: waiting for Nuvla parameters from file '$NUVLA_CONF_FILE
+    echo 'INFO: waiting for NuvlaBox Agent API at '$agent_api
     sleep 3
 done"
 
 nuvlabox_id=$(jq -r .id ${CONTEXT_FILE})
 nuvlabox_version=$(jq -r .version ${CONTEXT_FILE})
-source $NUVLA_CONF_FILE
-
-if [[ "${NUVLA_ENDPOINT}" != "https://"* ]] && [[ "${NUVLA_ENDPOINT}" != "http://"* ]]
-then
-  NUVLA_ENDPOINT="https://${NUVLA_ENDPOINT}"
-fi
-
-export NUVLA_ENDPOINT NUVLA_ENDPOINT_INSECURE
 
 echo "INFO: checking for existing peripherals..."
 check_existing_peripherals ${nuvlabox_id} ${nuvlabox_version}

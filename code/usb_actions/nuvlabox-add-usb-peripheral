@@ -270,7 +270,7 @@ if [[ -z ${existing_peripheral_identifier} ]]
 then
     if [[ ! -f "${nuvlabox_peripheral_filename}" ]]
     then
-      echo "INFO: posting new peripheral ${identifier} to Nuvla at ${NUVLA_ENDPOINT}"
+      echo "INFO: posting new peripheral ${identifier} to Nuvla at ${agent_api_peripheral}"
 
       nuvlabox_add_peripheral "${json}"
     fi

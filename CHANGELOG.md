@@ -1,4 +1,8 @@
 # Changelog
+## [1.4.1] - 2021-01-07
+### Added
+### Changed
+ - fix error parsing on agent api unavailable
 ## [1.4.0] - 2021-01-05
 ### Added
 ### Changed

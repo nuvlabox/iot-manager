@@ -54,7 +54,7 @@ nuvlabox_delete_peripheral() {
   then
     echo "INFO: successfully deleted peripheral ${identifier}"
   else
-    echo "ERR: could not delete peripheral ${identifier}! Reason: ${response}"
+    echo "ERR: could not delete peripheral ${identifier}! Reason: ${response}" && false
   fi
 }
 

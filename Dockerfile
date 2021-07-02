@@ -1,4 +1,16 @@
-FROM debian:buster-slim
+FROM golang:alpine3.12 as builder
+
+RUN apk update && apk add libusb-dev udev pkgconfig gcc musl-dev
+
+COPY code /opt/
+
+WORKDIR /opt/peripheral-manager-usb
+
+RUN go mod tidy && go build
+
+# ---
+
+FROM alpine:3.12
 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID
@@ -12,31 +24,10 @@ LABEL git.build.time=${GIT_BUILD_TIME}
 LABEL git.run.number=${GITHUB_RUN_NUMBER}
 LABEL git.run.id=${TRAVIS_BUILD_WEB_URL}
 
-RUN apt update && apt-get install -y --no-install-recommends \
-                    usbutils \
-                    curl \
-                    udev \
-                    jq \
-                    inotify-tools \
-                    ca-certificates
+RUN apk update && apk add libusb-dev udev
 
-RUN apt-get clean autoclean \
-        && apt-get autoremove --yes \
-        && /bin/bash -c "rm -rf /var/lib/{apt,dpkg,cache,log}/"debian:stretch-slim
-
-# Another way to do this (more complex but more powerful as well) is to install systemd
-# inside the Docker image and move the /dev mount into a tmpmount inside the container
-# See Balena's example: https://github.com/balena-io-library/base-images/blob/master/balena-base-images/armv7hf/debian/stretch/run/entry.sh
-
-COPY code/app.sh code/license.sh LICENSE /opt/nuvlabox/
-COPY code/usb_actions /usr/sbin/
-
-RUN chmod +x /usr/sbin/nuvla*
-
-WORKDIR /opt/nuvlabox/
-
-VOLUME /srv/nuvlabox/shared
+COPY --from=builder /opt/peripheral-manager-usb/peripheral-manager-usb /usr/sbin
 
 ONBUILD RUN ./license.sh
 
-ENTRYPOINT ["./app.sh"]
+ENTRYPOINT ["peripheral-manager-usb"]

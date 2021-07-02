@@ -1,6 +1,6 @@
-FROM golang:alpine3.9 as builder
+FROM golang as builder
 
-RUN apk update && apk add libusb-dev udev pkgconfig gcc musl-dev git
+RUN apt update && apt install -y libusb-1.0.0-dev udev
 
 COPY code /opt/
 
@@ -10,7 +10,7 @@ RUN go mod tidy && go build
 
 # ---
 
-FROM alpine:3.9
+FROM debian:buster-slim
 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID
@@ -24,7 +24,11 @@ LABEL git.build.time=${GIT_BUILD_TIME}
 LABEL git.run.number=${GITHUB_RUN_NUMBER}
 LABEL git.run.id=${TRAVIS_BUILD_WEB_URL}
 
-RUN apk update && apk add libusb-dev udev
+RUN apt update && apt install -y libusb-1.0.0-dev udev
+
+RUN apt-get clean autoclean \
+    && apt-get autoremove --yes \
+    && /bin/bash -c "rm -rf /var/lib/{apt,dpkg,cache,log}/"debian:buster-slim
 
 COPY --from=builder /opt/peripheral-manager-usb/peripheral-manager-usb /usr/sbin
 

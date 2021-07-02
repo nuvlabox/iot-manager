@@ -10,7 +10,7 @@ RUN go mod tidy && go build
 
 # ---
 
-FROM ubuntu
+FROM ubuntu:18.04
 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID

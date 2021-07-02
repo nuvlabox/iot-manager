@@ -1,4 +1,4 @@
-FROM golang:alpine3.12 as builder
+FROM golang:alpine3.9 as builder
 
 RUN apk update && apk add libusb-dev udev pkgconfig gcc musl-dev
 
@@ -10,7 +10,7 @@ RUN go mod tidy && go build
 
 # ---
 
-FROM alpine:3.12
+FROM alpine:3.9
 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID

@@ -6,11 +6,7 @@ COPY code /opt/
 
 WORKDIR /opt/peripheral-manager-usb
 
-RUN ls
-
 RUN go mod tidy && go build
-
-RUN ls
 
 # ---
 
@@ -30,7 +26,7 @@ LABEL git.run.id=${TRAVIS_BUILD_WEB_URL}
 
 RUN apk update && apk add libusb-dev udev
 
-COPY --from=builder /opt/peripheral-manager-usb/peripheral_manager_usb /usr/sbin
+COPY --from=builder /opt/peripheral-manager-usb/peripheral-manager-usb /usr/sbin
 
 ONBUILD RUN ./license.sh
 

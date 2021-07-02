@@ -10,7 +10,7 @@ RUN go mod tidy && go build
 
 # ---
 
-FROM debian:buster-slim
+FROM debian
 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID

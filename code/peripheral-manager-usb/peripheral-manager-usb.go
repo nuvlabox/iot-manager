@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -54,7 +53,7 @@ func get_existing_devices(query_url string) string {
 	if err != nil {
 		log.Fatalf("Unable to retrieve existing USB devices via %s. Error: %s", query_url, err)
 	}
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := ioutil.ReadAll(resp.Body)
 
 	return string(body)
 }

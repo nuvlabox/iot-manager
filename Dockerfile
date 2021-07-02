@@ -1,6 +1,6 @@
 FROM golang:alpine3.9 as builder
 
-RUN apk update && apk add libusb-dev udev pkgconfig gcc musl-dev
+RUN apk update && apk add libusb-dev udev pkgconfig gcc musl-dev git
 
 COPY code /opt/
 

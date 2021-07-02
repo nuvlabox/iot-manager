@@ -1,17 +1,21 @@
-package main
+package peripheral_manager_usb
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/google/gousb"
 	"github.com/google/gousb/usbid"
 	log "github.com/sirupsen/logrus"
-	// "github.com/google/gousb/usbid"
 )
 
 func getenv(key, fallback string) string {
@@ -55,6 +59,59 @@ func get_existing_devices(query_url string) string {
 	return string(body)
 }
 
+func get_serial_number_for_device(device_path string) (string, bool) {
+	cmd := exec.Command("udevadm", "info", "--attribute-walk", device_path)
+
+	stdout, cmd_err := cmd.Output()
+	var serial_number string = ""
+
+	if cmd_err != nil {
+		log.Errorf("Unable to run udevadm for device %s. Reason: %s", device_path, cmd_err.Error())
+		return serial_number, false
+	}
+
+	for _, line := range strings.Split(string(stdout), "\n") {
+		if strings.Contains(line, "serial") && !strings.Contains(line, ".usb") {
+			serial_number = strings.Split(line, "\"")[1]
+			break
+		}
+	}
+
+	if len(serial_number) > 0 {
+		return serial_number, true
+	} else {
+		return serial_number, false
+	}
+
+}
+
+func make_agent_request(method string, url string, json_body []byte) (bool, error) {
+	agent_client := &http.Client{}
+
+	var req *http.Request
+	var set_error error
+	if len(json_body) > 0 {
+		req, set_error = http.NewRequest(method, url, bytes.NewBuffer(json_body))
+		if set_error != nil {
+			log.Fatal(set_error)
+		}
+
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	} else {
+		req, set_error = http.NewRequest(method, url, bytes.NewBuffer(json_body))
+		if set_error != nil {
+			log.Fatal(set_error)
+		}
+	}
+
+	_, req_error := agent_client.Do(req)
+	if req_error != nil {
+		return false, req_error
+	}
+
+	return true, nil
+}
+
 func main() {
 	log.Info("Peripheral Manager USB has started")
 
@@ -69,16 +126,9 @@ func main() {
 
 	wait_for_nuvlabox_bootstrap(agent_api_base_url + "/healthcheck")
 
-	var agent_api_get_usb_devices string = agent_api_base_url + "/peripheral?parameter=interface&value=USB"
+	var agent_api_peripherals string = agent_api_base_url + "/peripheral"
 
-	existing_devices := make(map[string]interface{})
-	err := json.Unmarshal([]byte(get_existing_devices(agent_api_get_usb_devices)), &existing_devices)
-
-	if err != nil {
-		log.Fatalf("Cannot infer if there are already other USB devices registered in the NuvlaBox. Will not continue. Error: %s", err)
-	}
-	// END OF check_existing_peripherals
-	//
+	var agent_api_get_usb_devices string = agent_api_peripherals + "?parameter=interface&value=USB"
 
 	// Only one context should be needed for an application.  It should always be closed.
 	ctx := gousb.NewContext()
@@ -86,61 +136,158 @@ func main() {
 
 	var available bool = true
 	var dev_interface string = "USB"
-	var name string
-	var description string
-	var identifier string
+	var video_files_basedir string = "/dev/"
 
 	for true {
-		name = "UNNAMED USB Device"
-		identifier, description = "", ""
+		existing_devices := make(map[string]map[string]interface{})
+		err := json.Unmarshal([]byte(get_existing_devices(agent_api_get_usb_devices)), &existing_devices)
+
+		if err != nil {
+			log.Fatalf("Cannot infer if there are already other USB devices registered in the NuvlaBox. Will not continue. Error: %s", err)
+		}
+
+		name := "UNNAMED USB Device"
 
 		_, dev_err := ctx.OpenDevices(func(desc *gousb.DeviceDesc) bool {
-			identifier = fmt.Sprintf("%s:%s", desc.Vendor, desc.Product)
-			log.Info(identifier)
+			identifier := fmt.Sprintf("%s:%s", desc.Vendor, desc.Product)
 
-			product := usbid.Vendors[desc.Product]
-			log.Info(product)
+			device_path := fmt.Sprintf("/dev/bus/usb/%03d/%03d", desc.Bus, desc.Address)
 
 			vendor := usbid.Vendors[desc.Vendor]
-			log.Info(vendor)
 
-			description = fmt.Sprintf("%s %s %s", dev_interface, identifier, product)
-			log.Info(description)
+			product := vendor.Product[desc.Product]
+
+			description := fmt.Sprintf("%s device [%s] with ID %s. Protocol: %s",
+				dev_interface,
+				product.Name,
+				identifier,
+				usbid.Classify(desc))
 
 			if product != nil {
 				name = fmt.Sprintf("%s", product)
 			} else {
 				name = description
 			}
-			log.Info(name)
 
-			fmt.Printf("  Protocol: %s\n", usbid.Classify(desc))
+			classes_aux := make(map[string]bool)
 
-			// The configurations can be examined from the DeviceDesc, though they can only
-			// be set once the device is opened.  All configuration references must be closed,
-			// to free up the memory in libusb.
+			classes := make([]interface{}, 0)
+
 			for _, cfg := range desc.Configs {
-				// This loop just uses more of the built-in and usbid pretty printing to list
-				// the USB devices.
-				fmt.Printf("  %s:\n", cfg)
 				for _, intf := range cfg.Interfaces {
-					fmt.Printf("    --------------\n")
 					for _, ifSetting := range intf.AltSettings {
-						fmt.Printf("    %s\n", ifSetting)
-						fmt.Printf("      %s\n", usbid.Classify(ifSetting))
-						for _, end := range ifSetting.Endpoints {
-							fmt.Printf("      %s\n", end)
+						class := fmt.Sprintf("%s", usbid.Classes[ifSetting.Class])
+						if _, exists := classes_aux[class]; !exists {
+							classes_aux[class] = true
+							classes = append(classes, class)
 						}
 					}
 				}
-				fmt.Printf("    --------------\n")
 			}
 
-			// After inspecting the descriptor, return true or false depending on whether
-			// the device is "interesting" or not.  Any descriptor for which true is returned
-			// opens a Device which is retuned in a slice (and must be subsequently closed).
+			serial_number, ok := get_serial_number_for_device(device_path)
+
+			if !ok {
+				return false
+			}
+
+			peripheral := map[string]interface{}{
+				"name":        name,
+				"description": description,
+				"interface":   dev_interface,
+				"identifier":  identifier,
+				"classes":     classes,
+				"available":   available,
+				//"resources": n/a
+				// Leaving out the resources attribute since this is only used for
+				// block devices, which at the moment are already monitored by the
+				// NB Agent, so no need to duplicate the same information.
+				// To re-implement this attribute, check the raw legacy code in [1]
+			}
+
+			if len(vendor.Name) > 0 {
+				peripheral["vendor"] = vendor.Name
+			}
+
+			if len(product.Name) > 0 {
+				peripheral["product"] = product.Name
+			}
+
+			if len(device_path) > 0 {
+				peripheral["device-path"] = device_path
+			}
+
+			if len(serial_number) > 0 {
+				peripheral["serial-number"] = serial_number
+			}
+
+			dev_files, vf_err := ioutil.ReadDir(video_files_basedir)
+			if vf_err != nil {
+				log.Errorf("Unable to read files under %s. Reason: %s", video_files_basedir, vf_err.Error())
+				return false
+			}
+
+			for _, df := range dev_files {
+				if strings.HasPrefix(df.Name(), "video") {
+					vf_serial_number, _ := get_serial_number_for_device(video_files_basedir + df.Name())
+					if vf_serial_number == serial_number {
+						peripheral["video-device"] = video_files_basedir + df.Name()
+						break
+					}
+				}
+			}
+
+			// we now have a peripheral categorized, but is it new?
+			old_peripheral, is_old := existing_devices[identifier]
+
+			peripheral_body, _ := json.Marshal(peripheral)
+
+			if !is_old {
+				// this peripheral didn't exist before, so let's register (POST) it
+				log.Infof("Registering new peripheral %s with identifier %s", name, identifier)
+				ok, req_err := make_agent_request("POST", agent_api_peripherals, peripheral_body)
+
+				if !ok {
+					log.Errorf("Unable to register new peripheral %s (%s). Reason: %s", name, identifier, req_err)
+				}
+			} else {
+				// peripheral already registered
+				// the NB adds an ID, parent and Version to each peripheral...so let's remove those to simplify
+				delete(old_peripheral, "id")
+				delete(old_peripheral, "version")
+				delete(old_peripheral, "parent")
+				if reflect.DeepEqual(old_peripheral, peripheral) {
+					// this peripheral was already registered, and it has not changed since then
+					// nothing to do
+					delete(existing_devices, identifier)
+				} else {
+					// the peripheral already exists, but apparently it has changed
+					// need to update (PUT) it
+					log.Infof("An existing peripheral (%s - %s) has changed. Updating it", identifier, name)
+					ok, req_err := make_agent_request("PUT", agent_api_peripherals+"/"+identifier, peripheral_body)
+
+					if !ok {
+						log.Errorf("Unable to update peripheral %s (%s). Reason: %s", name, identifier, req_err)
+					}
+					delete(existing_devices, identifier)
+				}
+			}
+
 			return false
 		})
+
+		// whatever devices are left in existing_peripherals, have not in the system anymore
+		// so let's DELETE them
+		if len(existing_devices) > 0 {
+			for del_peripheral_id, _ := range existing_devices {
+				log.Infof("Peripheral %s (%s) is no longer visible. Removing it", del_peripheral_id, name)
+				ok, req_err := make_agent_request("DELETE", agent_api_peripherals+"/"+del_peripheral_id, []byte(""))
+
+				if !ok {
+					log.Errorf("Unable to delete old peripheral %s. Reason: %s", del_peripheral_id, req_err)
+				}
+			}
+		}
 
 		if dev_err != nil {
 			log.Errorf("A problem occurred while listing the USB peripherals %s. Continuing...", dev_err)
@@ -149,3 +296,41 @@ func main() {
 		time.Sleep(30 * time.Second)
 	}
 }
+
+// [1]
+/*
+resources=''
+if [[ -n "$device_serial" ]]
+then
+  matching_usb_disks=$(ls -d ${disk_by_id}/* | grep usb | grep "${device_serial}" || echo '')
+  for disk in ${matching_usb_disks}
+  do
+    block_device=$(readlink -f ${disk})
+    device_name=$(echo $block_device | awk -F'/' '{print $NF}')
+
+    partitions=$(lsblk $block_device -o NAME,MOUNTPOINT,FSUSE%,SIZE -f -i -n -P)
+    export $(echo "${partitions}" | grep "\"$device_name\"" | tr -d '%' | tr -d '"')
+
+    capacity_gb=$SIZE
+    unit=$block_device
+
+    resource_json="{\"unit\": \"${unit}\", \"capacity\": \"${capacity_gb}\"}"
+
+    # this section is commented because load changes with time, and at the moment this peripheral manager is
+    # opportunistic. It doesn't monitor peripherals periodically.
+    # If that changes, then uncomment this sections
+  #  if [ -n "$MOUNTPOINT" ] && [ -n "FSUSE" ]
+  #  then
+  #    # disk is mounted so we can get its usage
+  ##    load=$(df -h $block_device --output=pcent | tail -1 | tr -d ' ' | tr -d '%')
+  #    load=$FSUSE
+  #    resource_json="${resource_json},\"load\": ${load}}"
+  #  else
+  #    resource_json="${resource_json}}"
+  #  fi
+
+    resources="${resources}${resource_json},"
+  done
+  resources=$(echo "${resources}" | sed 's/\(.*\),/\1 /')
+fi
+*/

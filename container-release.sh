@@ -1,5 +1,5 @@
 #!/bin/bash -xe
-qemu-arm --version
+
 ###############################
 #  CHANGE THIS ON EVERY REPO  #
 DOCKER_IMAGE=$(basename `git rev-parse --show-toplevel`)

@@ -6,7 +6,11 @@ COPY code /opt/
 
 WORKDIR /opt/peripheral-manager-usb
 
+RUN ls
+
 RUN go mod tidy && go build
+
+RUN ls
 
 # ---
 

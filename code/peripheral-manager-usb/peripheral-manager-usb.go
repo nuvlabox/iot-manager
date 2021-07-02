@@ -1,4 +1,4 @@
-package peripheral_manager_usb
+package main
 
 import (
 	"bytes"

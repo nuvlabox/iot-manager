@@ -1,4 +1,8 @@
 # Changelog
+## [2.0.0] - 2021-07-26
+### Added 
+ - full rewrite in Golang
+### Changed
 ## [1.4.1] - 2021-01-07
 ### Added
 ### Changed

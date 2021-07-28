@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -30,6 +31,8 @@ var (
 	KUBERNETES_SERVICE_HOST, k8s_ok = os.LookupEnv("KUBERNETES_SERVICE_HOST")
 	namespace                       = getenv("MY_NAMESPACE", "nuvlabox")
 )
+
+var lsusb_functional bool = false
 
 func wait_for_nuvlabox_bootstrap(healthcheck_endpoint string) bool {
 	log.Info("Waiting for NuvlaBox to finish bootstrapping (looking at " + healthcheck_endpoint + ")")
@@ -112,6 +115,20 @@ func make_agent_request(method string, url string, json_body []byte) (bool, erro
 	return true, nil
 }
 
+func onContextError() {
+	if !lsusb_functional {
+		log.Warn("Unable to initialize USB discovery. Host might be incompatible with this peripheral manager. Trying again later...")
+		time.Sleep(10 * time.Second)
+		log.Info(string(debug.Stack()))
+		os.Exit(0)
+	}
+}
+
+func get_usb_context() *gousb.Context {
+	defer onContextError()
+	return gousb.NewContext()
+}
+
 func main() {
 	log.Info("Peripheral Manager USB has started")
 
@@ -131,7 +148,8 @@ func main() {
 	var agent_api_get_usb_devices string = agent_api_peripherals + "?parameter=interface&value=USB"
 
 	// Only one context should be needed for an application.  It should always be closed.
-	ctx := gousb.NewContext()
+	ctx := get_usb_context()
+	lsusb_functional = true
 	defer ctx.Close()
 
 	var available bool = true

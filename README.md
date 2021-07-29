@@ -5,7 +5,7 @@
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg?style=for-the-badge)](https://github.com/nuvlabox/peripheral-manager-usb/graphs/commit-activity)
 [![GitHub issues](https://img.shields.io/github/issues/nuvlabox/peripheral-manager-usb?style=for-the-badge&logo=github&logoColor=white)](https://GitHub.com/nuvlabox/peripheral-manager-usb/issues/)
 [![Docker pulls](https://img.shields.io/docker/pulls/nuvlabox/peripheral-manager-usb?style=for-the-badge&logo=Docker&logoColor=white)](https://cloud.docker.com/u/nuvlabox/repository/docker/nuvlabox/peripheral-manager-usb)
-[![Docker image size](https://img.shields.io/microbadger/image-size/nuvlabox/peripheral-manager-usb?style=for-the-badge&logo=docker&logoColor=white)](https://cloud.docker.com/u/nuvlabox/repository/docker/nuvlabox/peripheral-manager-usb)
+[![Docker image size](https://img.shields.io/docker/image-size/nuvlabox/peripheral-manager-usb?style=for-the-badge&logo=docker&logoColor=white)](https://cloud.docker.com/u/nuvlabox/repository/docker/nuvlabox/peripheral-manager-usb)
 
 
 ![CI Build](https://github.com/nuvlabox/peripheral-manager-usb/actions/workflows/main.yml/badge.svg)

@@ -1,4 +1,8 @@
 # Changelog
+## [2.0.2] - 2021-08-10
+### Added
+### Changed
+ - fixed defer execution on condition
 ## [2.0.1] - 2021-07-28
 ### Added 
  - graceful shutdown in case on unsupported host

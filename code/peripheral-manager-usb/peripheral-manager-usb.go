@@ -126,7 +126,10 @@ func onContextError() {
 
 func get_usb_context() *gousb.Context {
 	defer onContextError()
-	return gousb.NewContext()
+	c := gousb.NewContext()
+	lsusb_functional = true
+
+	return c
 }
 
 func main() {
@@ -149,7 +152,6 @@ func main() {
 
 	// Only one context should be needed for an application.  It should always be closed.
 	ctx := get_usb_context()
-	lsusb_functional = true
 	defer ctx.Close()
 
 	var available bool = true

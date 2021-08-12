@@ -1,4 +1,8 @@
 # Changelog
+## [2.0.3] - 2021-08-12
+### Added
+### Changed
+ - fix access to product name
 ## [2.0.2] - 2021-08-10
 ### Added
 ### Changed

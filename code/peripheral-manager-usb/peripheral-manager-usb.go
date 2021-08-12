@@ -179,7 +179,7 @@ func main() {
 
 			description := fmt.Sprintf("%s device [%s] with ID %s. Protocol: %s",
 				dev_interface,
-				product.Name,
+				product,
 				identifier,
 				usbid.Classify(desc))
 

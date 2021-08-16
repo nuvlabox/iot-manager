@@ -229,8 +229,8 @@ func main() {
 				peripheral["vendor"] = vendor.Name
 			}
 
-			if len(product.Name) > 0 {
-				peripheral["product"] = product.Name
+			if product != nil {
+				peripheral["product"] = product
 			}
 
 			if len(device_path) > 0 {

@@ -62,11 +62,12 @@ func get_existing_devices(query_url string) string {
 	return string(body)
 }
 
-func get_serial_number_for_device(device_path string) (string, bool) {
+func get_serial_number_for_device(device_path string) string {
 	cmd := exec.Command("udevadm", "info", "--attribute-walk", device_path)
 
 	stdout, cmd_err := cmd.Output()
 	var serial_number string = ""
+	var backup_serial_number string = ""
 
 	if cmd_err != nil {
 		log.Errorf("Unable to run udevadm for device %s. Reason: %s", device_path, cmd_err.Error())
@@ -74,18 +75,21 @@ func get_serial_number_for_device(device_path string) (string, bool) {
 	}
 
 	for _, line := range strings.Split(string(stdout), "\n") {
-		if strings.Contains(line, "serial") && !strings.Contains(line, ".usb") {
+		if strings.Contains(line, "serial") {
+			if strings.Contains(line, ".usb") {
+				backup_serial_number = strings.Split(line, "\"")[1]
+				continue
+			}
 			serial_number = strings.Split(line, "\"")[1]
 			break
 		}
 	}
 
-	if len(serial_number) > 0 {
-		return serial_number, true
-	} else {
-		return serial_number, false
+	if len(serial_number) == 0 && len(backup_serial_number) > 0 {
+		serial_number = backup_serial_number
 	}
 
+	return serial_number
 }
 
 func make_agent_request(method string, url string, json_body []byte) (bool, error) {
@@ -205,11 +209,7 @@ func main() {
 				}
 			}
 
-			serial_number, ok := get_serial_number_for_device(device_path)
-
-			if !ok {
-				return false
-			}
+			serial_number := get_serial_number_for_device(device_path)
 
 			peripheral := map[string]interface{}{
 				"name":        name,
@@ -249,7 +249,7 @@ func main() {
 
 			for _, df := range dev_files {
 				if strings.HasPrefix(df.Name(), "video") {
-					vf_serial_number, _ := get_serial_number_for_device(video_files_basedir + df.Name())
+					vf_serial_number := get_serial_number_for_device(video_files_basedir + df.Name())
 					if vf_serial_number == serial_number {
 						peripheral["video-device"] = video_files_basedir + df.Name()
 						break

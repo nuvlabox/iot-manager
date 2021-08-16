@@ -190,7 +190,7 @@ func main() {
 			if product != nil {
 				name = fmt.Sprintf("%s", product)
 			} else {
-				name = description
+				name = fmt.Sprintf("%s with ID %s", name, identifier)
 			}
 
 			classes_aux := make(map[string]bool)

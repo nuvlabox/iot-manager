@@ -71,7 +71,7 @@ func get_serial_number_for_device(device_path string) string {
 
 	if cmd_err != nil {
 		log.Errorf("Unable to run udevadm for device %s. Reason: %s", device_path, cmd_err.Error())
-		return serial_number, false
+		return serial_number
 	}
 
 	for _, line := range strings.Split(string(stdout), "\n") {

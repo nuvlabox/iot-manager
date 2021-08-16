@@ -1,4 +1,9 @@
 # Changelog
+## [2.0.4] - 2021-08-16
+### Added
+### Changed
+ - default peripheral name
+ - fix for unknown serial number
 ## [2.0.3] - 2021-08-12
 ### Added
 ### Changed

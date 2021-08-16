@@ -230,7 +230,7 @@ func main() {
 			}
 
 			if product != nil {
-				peripheral["product"] = product
+				peripheral["product"] = fmt.Sprintf("%s", product)
 			}
 
 			if len(device_path) > 0 {

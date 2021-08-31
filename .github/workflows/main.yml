@@ -38,8 +38,8 @@ jobs:
         with:
           name: dependencies
           path: |
-            dependencies-tree.png
-            dependencies-licenses.txt
+            code/peripheral-manager-usb/dependencies-tree.png
+            code/peripheral-manager-usb/dependencies-licenses.txt
 
   notify:
     if: always()

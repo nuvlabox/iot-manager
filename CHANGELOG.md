@@ -1,4 +1,8 @@
 # Changelog
+## [2.1.0] - 2022-07-18
+### Added
+### Changed
+ - Use common base image for all NE components
 ## [2.0.4] - 2021-08-16
 ### Added
 ### Changed

@@ -1,4 +1,8 @@
-FROM golang:alpine3.12 as builder
+ARG PYTHON_VERSION=3.8
+ARG ALPINE_VERSION=3.12
+ARG BASE_IMAGE=python:${PYTHON_VERSION}-alpine${ALPINE_VERSION}
+
+FROM golang:alpine${ALPINE_VERSION} as builder
 
 RUN apk update && apk add libusb-dev udev pkgconfig gcc musl-dev
 
@@ -10,7 +14,7 @@ RUN go mod tidy && go build
 
 # ---
 
-FROM alpine:3.12
+FROM ${BASE_IMAGE}
 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID

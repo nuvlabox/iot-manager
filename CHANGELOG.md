@@ -1,4 +1,8 @@
 # Changelog
+## [2.2.0] - 2022-09-01
+### Added
+### Changed
+ - Migration to NuvlaEdge
 ## [2.1.0] - 2022-07-18
 ### Added
 ### Changed

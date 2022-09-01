@@ -8,7 +8,6 @@ services:
       - /dev:/dev:ro
       - /run/udev/control:/run/udev/control:ro
     labels:
-      - nuvlabox.component=True
-      - nuvlabox.deployment=production
+      - nuvlaedge.component=True
+      - nuvlaedge.deployment=production
     network_mode: host
-

@@ -32,8 +32,8 @@ LABEL org.opencontainers.image.authors="support@sixsq.com"
 LABEL org.opencontainers.image.created=${GIT_BUILD_TIME}
 LABEL org.opencontainers.image.url=${PROJECT_URL}
 LABEL org.opencontainers.image.vendor="SixSq SA"
-LABEL org.opencontainers.image.title="NuvlaBox Peripheral Manager USB"
-LABEL org.opencontainers.image.description="Finds and identifies USB peripherals connected to the NuvlaBox"
+LABEL org.opencontainers.image.title="NuvlaEdge Peripheral Manager USB"
+LABEL org.opencontainers.image.description="Finds and identifies USB peripherals connected to the NuvlaEdge"
 
 RUN apk update && apk add libusb-dev udev
 

@@ -1,4 +1,4 @@
-module github.com/nuvlabox/peripheral-manager-usb
+module github.com/nuvlaedge/peripheral-manager-usb
 
 go 1.16
 

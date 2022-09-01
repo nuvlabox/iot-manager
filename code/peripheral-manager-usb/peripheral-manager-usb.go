@@ -29,13 +29,13 @@ func getenv(key, fallback string) string {
 
 var (
 	KUBERNETES_SERVICE_HOST, k8s_ok = os.LookupEnv("KUBERNETES_SERVICE_HOST")
-	namespace                       = getenv("MY_NAMESPACE", "nuvlabox")
+	namespace                       = getenv("MY_NAMESPACE", "nuvlaedge")
 )
 
 var lsusb_functional bool = false
 
-func wait_for_nuvlabox_bootstrap(healthcheck_endpoint string) bool {
-	log.Info("Waiting for NuvlaBox to finish bootstrapping (looking at " + healthcheck_endpoint + ")")
+func wait_for_nuvlaedge_bootstrap(healthcheck_endpoint string) bool {
+	log.Info("Waiting for NuvlaEdge to finish bootstrapping (looking at " + healthcheck_endpoint + ")")
 	defer log.Info("Agent API is ready")
 	for true {
 		resp, _ := http.Get(healthcheck_endpoint)
@@ -148,7 +148,7 @@ func main() {
 
 	var agent_api_base_url string = "http://" + agent_dns_name + "/api"
 
-	wait_for_nuvlabox_bootstrap(agent_api_base_url + "/healthcheck")
+	wait_for_nuvlaedge_bootstrap(agent_api_base_url + "/healthcheck")
 
 	var agent_api_peripherals string = agent_api_base_url + "/peripheral"
 
@@ -167,7 +167,7 @@ func main() {
 		err := json.Unmarshal([]byte(get_existing_devices(agent_api_get_usb_devices)), &existing_devices)
 
 		if err != nil {
-			log.Fatalf("Cannot infer if there are already other USB devices registered in the NuvlaBox. Will not continue. Error: %s", err)
+			log.Fatalf("Cannot infer if there are already other USB devices registered in the NuvlaEdge. Will not continue. Error: %s", err)
 		}
 
 		name := "UNNAMED USB Device"

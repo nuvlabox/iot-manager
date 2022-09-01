@@ -13,7 +13,7 @@ go get github.com/kisielk/godepgraph
 cd code/peripheral-manager-usb
 cp ../../LICENSE .
 
-godepgraph -s github.com/nuvlabox/peripheral-manager-usb | dot -Tpng -o dependencies-tree.png
+godepgraph -s github.com/nuvlaedge/peripheral-manager-usb | dot -Tpng -o dependencies-tree.png
 go-licenses csv . --stderrthreshold 3 > dependencies-licenses.txt
 EOF
 

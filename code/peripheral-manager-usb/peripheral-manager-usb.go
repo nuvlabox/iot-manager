@@ -1,12 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"reflect"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -178,39 +176,9 @@ func main() {
 			}
 
 			// we now have a peripheral categorized, but is it new
-			peripheralBody, _ := json.Marshal(peripheral)
+			//peripheralBody, _ := json.Marshal(peripheral)
 
-			if !isOld {
-				// this peripheral didn't exist before, so let's register (POST) it
-				log.Infof("Registering new peripheral %s with identifier %s", name, identifier)
-				ok, reqErr := makeAgentRequest("POST", agentApiPeripherals, peripheralBody)
-
-				if !ok {
-					log.Errorf("Unable to register new peripheral %s (%s). Reason: %s", name, identifier, reqErr)
-				}
-			} else {
-				// peripheral already registered
-				// the NB adds an ID, parent and Version to each peripheral...so let's remove those to simplify
-				delete(oldPeripheral, "id")
-				delete(oldPeripheral, "version")
-				delete(oldPeripheral, "parent")
-				if reflect.DeepEqual(oldPeripheral, peripheral) {
-					// this peripheral was already registered, and it has not changed since then
-					// nothing to do
-					delete(existingDevices, identifier)
-				} else {
-					// the peripheral already exists, but apparently it has changed
-					// need to update (PUT) it
-					log.Infof("An existing peripheral (%s - %s) has changed. Updating it", identifier, name)
-					ok, reqErr := makeAgentRequest("PUT", agentApiPeripherals+"/"+identifier, peripheralBody)
-
-					if !ok {
-						log.Errorf("Unable to update peripheral %s (%s). Reason: %s", name, identifier, reqErr)
-					}
-					delete(existingDevices, identifier)
-				}
-			}
-
+			log.Info("Usb found with feats: %s", peripheral)
 			return false
 		})
 

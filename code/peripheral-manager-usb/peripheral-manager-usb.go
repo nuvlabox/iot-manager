@@ -82,7 +82,7 @@ func checkFileSystem() {
 	}
 }
 
-func saveDiscoveredPeripherals(data map[string]string) {
+func saveDiscoveredPeripherals(data map[string]interface{}) {
 	bData, _ := json.Marshal(data)
 	file := ChannelPath + formatFileName()
 	log.Infof("Saving USB peripherals to %s", file)
@@ -112,7 +112,7 @@ func main() {
 	for true {
 		// Default name for USB
 		name := "UNNAMED USB Device"
-		var message = map[string]string{}
+		var message = map[string]interface{}{}
 
 		_, devErr := ctx.OpenDevices(func(desc *gousb.DeviceDesc) bool {
 			identifier := fmt.Sprintf("%s:%s", desc.Vendor, desc.Product)
@@ -200,8 +200,7 @@ func main() {
 			}
 
 			// we now have a peripheral categorized, but is it new
-			peripheralBody, _ := json.MarshalIndent(peripheral, "", "  ")
-			message[identifier] = string(peripheralBody)
+			message[identifier] = peripheral
 			return false
 		})
 		jsonMessage, _ := json.MarshalIndent(message, "", "  ")

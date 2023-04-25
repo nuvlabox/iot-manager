@@ -83,7 +83,7 @@ func checkFileSystem() {
 }
 
 func saveDiscoveredPeripherals(data map[string]string) {
-	bData, _ := json.MarshalIndent(data, "", "  ")
+	bData, _ := json.Marshal(data)
 	file := ChannelPath + formatFileName()
 	log.Infof("Saving USB peripherals to %s", file)
 	_ = os.WriteFile(
@@ -104,7 +104,7 @@ func main() {
 		}
 	}(ctx)
 
-	var available bool = true
+	var available string = "True"
 	var devInterface string = "USB"
 	var videoFilesBasedir string = "/dev/"
 	checkFileSystem()

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,20 +15,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func getEnv(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
-		return fallback
-	}
-	return value
-}
+const DatetimeFormat = "01022006150405"
+const NuvlaEdgeRootFileSystem = "/srv/nuvlaedge/shared/"
+const PeripheralsFolder = ".peripherals/"
+const PeripheralName = "usb"
+const ChannelPath = NuvlaEdgeRootFileSystem + PeripheralsFolder + PeripheralName + "/buffer/"
 
-var (
-	KUBERNETES_SERVICE_HOST, k8s_ok = os.LookupEnv("KUBERNETES_SERVICE_HOST")
-	namespace                       = getEnv("MY_NAMESPACE", "nuvlaedge")
-)
-
-var lsUsbFunctional bool = false
+var lsUsbFunctional = false
 
 func getSerialNumberForDevice(devicePath string) string {
 	cmd := exec.Command("udevadm", "info", "--attribute-walk", devicePath)
@@ -61,7 +55,8 @@ func getSerialNumberForDevice(devicePath string) string {
 
 func onContextError() {
 	if !lsUsbFunctional {
-		log.Warn("Unable to initialize USB discovery. Host might be incompatible with this peripheral manager. Trying again later...")
+		log.Warn("Unable to initialize USB discovery. Host might be incompatible with this " +
+			"peripheral manager. Trying again later...")
 		time.Sleep(10 * time.Second)
 		log.Info(string(debug.Stack()))
 		os.Exit(0)
@@ -75,20 +70,49 @@ func getUsbContext() *gousb.Context {
 	return c
 }
 
+func formatFileName() string {
+	now := time.Now().Format(DatetimeFormat)
+	return string(now) + "_" + PeripheralName + ".json"
+}
+
+func checkFileSystem() {
+	log.Infof("Creating USB folder structure %s", ChannelPath)
+	if err := os.MkdirAll(ChannelPath, os.ModePerm); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func saveDiscoveredPeripherals(data map[string]string) {
+	bData, _ := json.MarshalIndent(data, "", "  ")
+	file := ChannelPath + formatFileName()
+	log.Infof("Saving USB peripherals to %s", file)
+	_ = os.WriteFile(
+		file,
+		bData,
+		0644)
+}
+
 func main() {
 	log.Info("Peripheral Manager USB has started")
 
 	// Only one context should be needed for an application.  It should always be closed.
 	ctx := getUsbContext()
-	defer ctx.Close()
+	defer func(ctx *gousb.Context) {
+		err := ctx.Close()
+		if err != nil {
+
+		}
+	}(ctx)
 
 	var available bool = true
 	var devInterface string = "USB"
 	var videoFilesBasedir string = "/dev/"
+	checkFileSystem()
 
 	for true {
 		// Default name for USB
 		name := "UNNAMED USB Device"
+		var message = map[string]string{}
 
 		_, devErr := ctx.OpenDevices(func(desc *gousb.DeviceDesc) bool {
 			identifier := fmt.Sprintf("%s:%s", desc.Vendor, desc.Product)
@@ -176,11 +200,14 @@ func main() {
 			}
 
 			// we now have a peripheral categorized, but is it new
-			//peripheralBody, _ := json.Marshal(peripheral)
-
-			log.Info("Usb found with feats: %s", peripheral)
+			peripheralBody, _ := json.MarshalIndent(peripheral, "", "  ")
+			message[identifier] = string(peripheralBody)
 			return false
 		})
+		jsonMessage, _ := json.MarshalIndent(message, "", "  ")
+		log.Infof("Usb found with feats: %s", string(jsonMessage))
+		log.Infof("Generating File name: %s", formatFileName())
+		saveDiscoveredPeripherals(message)
 
 		if devErr != nil {
 			log.Errorf("A problem occurred while listing the USB peripherals %s. Continuing...", devErr)
